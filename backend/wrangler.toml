@@ -1,0 +1,14 @@
+name = "ruanimports"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ruanimports-db"
+database_id = "1a0e5dd8-4924-47bf-a1eb-edc545b015b2"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+not_found_handling = "404-page"
