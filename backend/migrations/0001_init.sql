@@ -1,11 +1,11 @@
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   id TEXT PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
   category_id TEXT NOT NULL REFERENCES categories(id),
   name TEXT NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE products (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE coupons (
+CREATE TABLE IF NOT EXISTS coupons (
   id TEXT PRIMARY KEY,
   code TEXT UNIQUE NOT NULL,
   label TEXT NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE coupons (
   active INTEGER NOT NULL DEFAULT 1
 );
 
-CREATE TABLE banners (
+CREATE TABLE IF NOT EXISTS banners (
   id TEXT PRIMARY KEY,
   position INTEGER NOT NULL DEFAULT 0,
   theme TEXT NOT NULL DEFAULT 'dark',
@@ -43,14 +43,14 @@ CREATE TABLE banners (
   active INTEGER NOT NULL DEFAULT 1
 );
 
-CREATE TABLE admin_users (
+CREATE TABLE IF NOT EXISTS admin_users (
   id TEXT PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE admin_sessions (
+CREATE TABLE IF NOT EXISTS admin_sessions (
   token TEXT PRIMARY KEY,
   admin_id TEXT NOT NULL REFERENCES admin_users(id),
   expires_at TEXT NOT NULL

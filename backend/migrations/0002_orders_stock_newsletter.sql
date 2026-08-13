@@ -1,7 +1,7 @@
 ALTER TABLE products ADD COLUMN description TEXT NOT NULL DEFAULT '';
 ALTER TABLE products ADD COLUMN stock INTEGER;
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   customer_name TEXT NOT NULL DEFAULT '',
   customer_phone TEXT NOT NULL DEFAULT '',
@@ -15,7 +15,7 @@ CREATE TABLE orders (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE newsletter_subscribers (
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
   email TEXT UNIQUE NOT NULL,
