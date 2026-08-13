@@ -39,13 +39,8 @@ function findExistingId() {
 }
 
 function createDatabase() {
-  const out = run(`npx wrangler d1 create ${DB_NAME} --json`);
-  try {
-    const info = JSON.parse(out);
-    if (info.uuid) return info.uuid;
-  } catch (e) {
-    // fall through to regex extraction below
-  }
+  // wrangler d1 create does not support --json; parse its plain-text output.
+  const out = run(`npx wrangler d1 create ${DB_NAME}`);
   return extractUuid(out);
 }
 
