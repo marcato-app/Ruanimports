@@ -42,6 +42,8 @@ function rowToProduct(row) {
     icon: row.icon,
     active: !!row.active,
     sortOrder: row.sort_order,
+    description: row.description || '',
+    stock: row.stock === null || row.stock === undefined ? null : row.stock,
   };
 }
 
@@ -194,12 +196,13 @@ route('POST', '/api/admin/products', async (request, env) => {
   if (!b.name || !b.categoryId || b.price == null) return badRequest('Informe nome, categoria e preço');
   const id = genId('prd');
   await env.DB.prepare(
-    `INSERT INTO products (id, category_id, name, brand, price, tag, rating, reviews, sizes, colors, icon, active, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO products (id, category_id, name, brand, price, tag, rating, reviews, sizes, colors, icon, active, sort_order, description, stock)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, b.categoryId, b.name, b.brand || '', b.price, b.tag || '',
     b.rating ?? 4.5, b.reviews ?? 0, JSON.stringify(b.sizes || []), JSON.stringify(b.colors || []),
-    b.icon || 'tenis', b.active === false ? 0 : 1, b.sortOrder || 0
+    b.icon || 'tenis', b.active === false ? 0 : 1, b.sortOrder || 0,
+    b.description || '', b.stock === '' || b.stock == null ? null : b.stock
   ).run();
   return json({ id });
 });
@@ -208,12 +211,13 @@ route('PUT', '/api/admin/products/:id', async (request, env, params) => {
   if (!(await requireAdmin(request, env))) return unauthorized();
   const b = await request.json().catch(() => ({}));
   await env.DB.prepare(
-    `UPDATE products SET category_id=?, name=?, brand=?, price=?, tag=?, rating=?, reviews=?, sizes=?, colors=?, icon=?, active=?, sort_order=?, updated_at=datetime('now')
+    `UPDATE products SET category_id=?, name=?, brand=?, price=?, tag=?, rating=?, reviews=?, sizes=?, colors=?, icon=?, active=?, sort_order=?, description=?, stock=?, updated_at=datetime('now')
      WHERE id = ?`
   ).bind(
     b.categoryId, b.name, b.brand || '', b.price, b.tag || '',
     b.rating ?? 4.5, b.reviews ?? 0, JSON.stringify(b.sizes || []), JSON.stringify(b.colors || []),
-    b.icon || 'tenis', b.active === false ? 0 : 1, b.sortOrder || 0, params.id
+    b.icon || 'tenis', b.active === false ? 0 : 1, b.sortOrder || 0,
+    b.description || '', b.stock === '' || b.stock == null ? null : b.stock, params.id
   ).run();
   return json({ ok: true });
 });
@@ -295,6 +299,97 @@ route('DELETE', '/api/admin/banners/:id', async (request, env, params) => {
   if (!(await requireAdmin(request, env))) return unauthorized();
   await env.DB.prepare('DELETE FROM banners WHERE id = ?').bind(params.id).run();
   return json({ ok: true });
+});
+
+/* ===================== ORDERS (public create/lookup) ===================== */
+
+function rowToOrder(row) {
+  return {
+    id: row.id,
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone,
+    customerEmail: row.customer_email,
+    items: JSON.parse(row.items || '[]'),
+    subtotal: row.subtotal,
+    discount: row.discount,
+    total: row.total,
+    couponCode: row.coupon_code,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+route('POST', '/api/orders', async (request, env) => {
+  const b = await request.json().catch(() => ({}));
+  if (!Array.isArray(b.items) || !b.items.length) return badRequest('Carrinho vazio');
+  const id = genId('ord');
+  await env.DB.prepare(
+    `INSERT INTO orders (id, customer_name, customer_phone, customer_email, items, subtotal, discount, total, coupon_code, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo')`
+  ).bind(
+    id, b.customerName || '', b.customerPhone || '', b.customerEmail || '',
+    JSON.stringify(b.items), b.subtotal || 0, b.discount || 0, b.total || 0, b.couponCode || ''
+  ).run();
+
+  for (const item of b.items) {
+    if (!item.id || !item.qty) continue;
+    const product = await env.DB.prepare('SELECT stock FROM products WHERE id = ?').bind(item.id).first();
+    if (product && product.stock !== null) {
+      const newStock = Math.max(0, product.stock - item.qty);
+      await env.DB.prepare('UPDATE products SET stock = ? WHERE id = ?').bind(newStock, item.id).run();
+    }
+  }
+
+  return json({ id });
+});
+
+route('GET', '/api/orders', async (request, env) => {
+  const url = new URL(request.url);
+  const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+  if (!email) return json([]);
+  const { results } = await env.DB.prepare(
+    'SELECT * FROM orders WHERE lower(customer_email) = ? ORDER BY created_at DESC'
+  ).bind(email).all();
+  return json(results.map(rowToOrder));
+});
+
+/* ===================== ADMIN: ORDERS ===================== */
+
+route('GET', '/api/admin/orders', async (request, env) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  const { results } = await env.DB.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+  return json(results.map(rowToOrder));
+});
+
+route('PUT', '/api/admin/orders/:id', async (request, env, params) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  const b = await request.json().catch(() => ({}));
+  const allowed = ['novo', 'em_andamento', 'concluido', 'cancelado'];
+  if (!allowed.includes(b.status)) return badRequest('Status inválido');
+  await env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(b.status, params.id).run();
+  return json({ ok: true });
+});
+
+/* ===================== NEWSLETTER ===================== */
+
+route('POST', '/api/newsletter', async (request, env) => {
+  const b = await request.json().catch(() => ({}));
+  const email = (b.email || '').trim().toLowerCase();
+  if (!email) return badRequest('Informe um e-mail');
+  const id = genId('nws');
+  try {
+    await env.DB.prepare('INSERT INTO newsletter_subscribers (id, name, email) VALUES (?, ?, ?)')
+      .bind(id, b.name || '', email).run();
+  } catch (err) {
+    // já cadastrado — trata como sucesso idempotente
+  }
+  return json({ ok: true });
+});
+
+route('GET', '/api/admin/newsletter', async (request, env) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  const { results } = await env.DB.prepare('SELECT * FROM newsletter_subscribers ORDER BY created_at DESC').all();
+  return json(results);
 });
 
 /* ===================== ENTRY ===================== */

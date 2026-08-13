@@ -297,9 +297,15 @@
   .card .fav-btn svg{width:15px;height:15px;stroke:var(--ink);fill:none;transition:.15s;}
   .card .fav-btn.active{border-color:var(--gold-3);}
   .card .fav-btn.active svg{fill:var(--gold-3);stroke:var(--gold-4);}
-  .card .img-wrap{aspect-ratio:1/1;background:var(--ink);display:flex;align-items:center;justify-content:center;position:relative;}
+  .card .img-wrap{width:100%;aspect-ratio:1/1;background:var(--ink);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;}
+  .card-title-link{cursor:pointer;}
+  .card-title-link:hover{color:var(--gold-4);}
+  .tag.tag-out{background:var(--muted);color:var(--paper);}
+  .low-stock{font-size:.68rem;font-weight:700;color:#b23b3b;margin-bottom:8px;}
+  .add-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .add-btn:disabled:hover{background:var(--ink);color:var(--gold-2);}
   .card .img-wrap svg{width:52%;height:52%;stroke:var(--gold-2);color:var(--gold-2);}
-  .card .tag{
+  .card .tag, .product-stage .tag{
     position:absolute;top:12px;left:12px;background:var(--gold-grad);color:var(--ink);font-size:.6rem;font-weight:800;
     letter-spacing:.05em;padding:5px 11px;border-radius:20px;text-transform:uppercase;
   }
@@ -336,6 +342,14 @@
 
   /* ===== CATALOG VIEW HEAD ===== */
   .catalog-head{max-width:var(--wrap);margin:0 auto;padding:24px 24px 0;}
+
+  /* ===== PRODUCT DETAIL ===== */
+  .product-layout{display:grid;grid-template-columns:1fr;gap:36px;}
+  @media(min-width:800px){.product-layout{grid-template-columns:1fr 1.15fr;align-items:start;}}
+  .product-stage{aspect-ratio:1/1;background:var(--ink);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;position:relative;}
+  .product-stage svg{width:52%;height:52%;stroke:var(--gold-2);color:var(--gold-2);}
+  .product-info h1{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:1.7rem;margin:6px 0 10px;line-height:1.2;}
+  .product-description{color:var(--muted);font-size:.9rem;line-height:1.75;margin:16px 0 20px;max-width:56ch;}
   .back-link{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;font-weight:700;color:var(--muted);letter-spacing:.03em;}
   .back-link:hover{color:var(--ink);}
   .back-link svg{width:13px;height:13px;stroke:currentColor;}
@@ -386,6 +400,9 @@
     background:var(--gold-grad);color:var(--ink);font-size:.72rem;font-weight:800;
     display:flex;align-items:center;justify-content:center;
   }
+  .size-table{width:100%;border-collapse:collapse;margin-top:6px;}
+  .size-table th{text-align:left;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--line);}
+  .size-table td{padding:8px 10px;font-size:.84rem;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
 
   .cart-item{display:flex;gap:14px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line);}
   .cart-item .thumb{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
@@ -438,6 +455,13 @@
   .account-info-row span.v{font-weight:700;color:var(--ink);}
   .logout-btn{width:100%;margin-top:22px;padding:13px;border-radius:30px;border:1.5px solid var(--line);font-weight:700;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
   .logout-btn:hover{border-color:var(--ink);color:var(--ink);}
+  .orders-title{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 12px;}
+  .empty-note{font-size:.8rem;color:var(--muted);}
+  .my-order{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;}
+  .my-order-head{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
+  .my-order-status{font-weight:700;color:var(--gold-4);}
+  .my-order-items{font-size:.82rem;color:var(--ink);margin-bottom:4px;}
+  .my-order-total{font-size:.85rem;font-weight:800;color:var(--ink);}
 
   .fav-grid-empty{text-align:center;padding:50px 10px;color:var(--muted);font-size:.85rem;line-height:1.6;}
 
@@ -744,6 +768,23 @@
   </section>
 </main>
 
+<!-- ===================== PRODUCT DETAIL VIEW ===================== -->
+<main class="view" id="view-product">
+  <div class="catalog-head">
+    <button class="back-link" id="product-back-link" onclick="goHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      Voltar
+    </button>
+  </div>
+  <section class="section" style="padding-top:20px;" id="product-detail-body"></section>
+  <section class="section" id="related-section" style="display:none;">
+    <div class="section-head">
+      <div><span class="eyebrow">Você também pode gostar</span><h2>Produtos relacionados</h2></div>
+    </div>
+    <div class="grid" id="related-grid"></div>
+  </section>
+</main>
+
 <!-- ===== FOOTER (persistent) ===== -->
 <footer>
   <div class="footer-inner">
@@ -766,6 +807,7 @@
       <h4>Ajuda</h4>
       <ul>
         <li><button onclick="openInfo('comprar')">Como comprar</button></li>
+        <li><button onclick="openInfo('tamanhos')">Guia de tamanhos</button></li>
         <li><button onclick="openInfo('trocas')">Trocas e devoluções</button></li>
         <li><button onclick="contactWhatsapp()">Fale conosco</button></li>
         <li><button onclick="openInfo('privacidade')">Política de privacidade</button></li>
@@ -1047,22 +1089,26 @@ function goHome(){
 /* ============ RENDER ============ */
 function cardHTML(p){
   const isFav = store.favs.includes(p.id);
+  const outOfStock = p.stock !== null && p.stock !== undefined && p.stock <= 0;
+  const lowStock = !outOfStock && p.stock !== null && p.stock !== undefined && p.stock <= 5;
+  const tagText = outOfStock ? 'Esgotado' : p.tag;
   return `
   <div class="card">
-    ${p.tag ? `<span class="tag">${p.tag}</span>` : ''}
+    ${tagText ? `<span class="tag ${outOfStock ? 'tag-out' : ''}">${tagText}</span>` : ''}
     <button class="fav-btn ${isFav?'active':''}" onclick="toggleFav('${p.id}')">
       <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 21s-7.5-4.9-10-9.3C.4 8 2 4.5 5.6 4c2-.3 3.8.6 4.9 2.3C11.6 4.6 13.4 3.7 15.4 4 19 4.5 20.6 8 20 11.7 17.5 16.1 12 21 12 21z"/></svg>
     </button>
-    <div class="img-wrap">${iconMarkup(p.icon)}</div>
+    <button class="img-wrap" onclick="openProduct('${p.id}')" aria-label="Ver detalhes de ${p.name}">${iconMarkup(p.icon)}</button>
     <div class="info">
       <div class="cat">${categoryName(p.cat)} · ${p.brand}</div>
-      <h3>${p.name}</h3>
+      <h3 class="card-title-link" onclick="openProduct('${p.id}')">${p.name}</h3>
       <div class="rating">${starsHTML(p.rating)}<span class="rating-num tnum">${p.rating.toFixed(1)}</span><span class="rating-count">(${p.reviews})</span></div>
       <div class="price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
       <div class="installments tnum">ou 3x de R$ ${(p.price/3).toFixed(2).replace('.',',')} sem juros</div>
-      <button class="add-btn" onclick="openQuickAdd('${p.id}')">
+      ${lowStock ? `<div class="low-stock">Últimas ${p.stock} unidades</div>` : ''}
+      <button class="add-btn" ${outOfStock ? 'disabled' : ''} onclick="${outOfStock ? '' : `openQuickAdd('${p.id}')`}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
-        Adicionar
+        ${outOfStock ? 'Indisponível' : 'Adicionar'}
       </button>
     </div>
   </div>`;
@@ -1072,6 +1118,91 @@ function renderGrid(elId, list){
   const el = document.getElementById(elId);
   if(!el) return;
   el.innerHTML = list.map(cardHTML).join('') || '<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px;">Nenhum produto encontrado.</p>';
+}
+
+/* ============ PÁGINA DE PRODUTO ============ */
+let productViewState = null;
+
+function openProduct(id){
+  const p = PRODUCTS.find(x => x.id === id);
+  if(!p) return;
+  productViewState = {id, size: p.sizes[0] || '', color: p.colors[0] || '', qty: 1};
+  history.replaceState(null, '', '#produto/' + id);
+  showView('product');
+  renderProductView();
+}
+
+function setProductOption(facet, value){
+  productViewState[facet] = value;
+  renderProductView();
+}
+function setProductQty(delta){
+  productViewState.qty = Math.max(1, productViewState.qty + delta);
+  renderProductView();
+}
+
+function renderProductView(){
+  const p = PRODUCTS.find(x => x.id === productViewState.id);
+  if(!p) return;
+  document.getElementById('product-back-link').onclick = () => filterCat(p.cat);
+  const outOfStock = p.stock !== null && p.stock !== undefined && p.stock <= 0;
+  const lowStock = !outOfStock && p.stock !== null && p.stock !== undefined && p.stock <= 5;
+
+  document.getElementById('product-detail-body').innerHTML = `
+    <div class="product-layout">
+      <div class="product-stage">
+        ${p.tag ? `<span class="tag ${outOfStock ? 'tag-out' : ''}">${outOfStock ? 'Esgotado' : p.tag}</span>` : (outOfStock ? `<span class="tag tag-out">Esgotado</span>` : '')}
+        ${iconMarkup(p.icon)}
+      </div>
+      <div class="product-info">
+        <div class="cat">${categoryName(p.cat)} · ${p.brand}</div>
+        <h1>${p.name}</h1>
+        <div class="rating">${starsHTML(p.rating)}<span class="rating-num tnum">${p.rating.toFixed(1)}</span><span class="rating-count">(${p.reviews} avaliações)</span></div>
+        <div class="price tnum" style="font-size:1.7rem;">R$ ${p.price.toFixed(2).replace('.',',')}</div>
+        <div class="installments tnum" style="font-size:.8rem;margin-bottom:0;">ou 3x de R$ ${(p.price/3).toFixed(2).replace('.',',')} sem juros</div>
+        ${p.description ? `<p class="product-description">${p.description}</p>` : '<p class="product-description">Peça selecionada a dedo pela curadoria da Ruan Pedro Imports.</p>'}
+        ${lowStock ? `<div class="low-stock">Últimas ${p.stock} unidades</div>` : ''}
+        ${p.sizes.length > 1 ? `
+        <div class="qa-group">
+          <label>Tamanho <a href="#" onclick="openInfo('tamanhos'); return false;" style="text-transform:none;font-weight:600;color:var(--gold-4);float:right;">Guia de tamanhos</a></label>
+          <div class="qa-options">
+            ${p.sizes.map(s => `<button class="qa-chip ${productViewState.size === s ? 'active' : ''}" onclick="setProductOption('size','${s}')">${s}</button>`).join('')}
+          </div>
+        </div>` : ''}
+        ${p.colors.length > 1 ? `
+        <div class="qa-group">
+          <label>Cor</label>
+          <div class="qa-options">
+            ${p.colors.map(c => `<button class="qa-chip ${productViewState.color === c ? 'active' : ''}" onclick="setProductOption('color','${c}')">${c}</button>`).join('')}
+          </div>
+        </div>` : ''}
+        <div class="qa-group">
+          <label>Quantidade</label>
+          <div class="qty-ctrl">
+            <button onclick="setProductQty(-1)">-</button>
+            <span class="tnum">${productViewState.qty}</span>
+            <button onclick="setProductQty(1)">+</button>
+          </div>
+        </div>
+        <button class="btn-full" style="max-width:340px;" ${outOfStock ? 'disabled' : ''} onclick="confirmProductAdd()">
+          ${outOfStock ? 'Produto indisponível' : 'Adicionar ao carrinho'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  const related = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
+  const relatedSection = document.getElementById('related-section');
+  if(related.length){
+    relatedSection.style.display = '';
+    renderGrid('related-grid', related);
+  } else {
+    relatedSection.style.display = 'none';
+  }
+}
+
+function confirmProductAdd(){
+  addToCart(productViewState.id, productViewState.size, productViewState.color, productViewState.qty);
 }
 
 function renderHome(){
@@ -1222,7 +1353,7 @@ function renderQuickAdd(){
     </div>
     ${p.sizes.length > 1 ? `
     <div class="qa-group">
-      <label>Tamanho</label>
+      <label>Tamanho <a href="#" onclick="openInfo('tamanhos'); return false;" style="text-transform:none;font-weight:600;color:var(--gold-4);float:right;">Guia de tamanhos</a></label>
       <div class="qa-options">
         ${p.sizes.map(s => `<button class="qa-chip ${quickAddState.size === s ? 'active' : ''}" onclick="setQuickAdd('size','${s}')">${s}</button>`).join('')}
       </div>
@@ -1347,23 +1478,49 @@ async function renderCart(){
   document.getElementById('cart-total').textContent = 'R$ ' + grandTotal.toFixed(2).replace('.',',');
 }
 
-function checkoutWhatsapp(){
+async function checkoutWhatsapp(){
   const cart = store.cart;
   if(!cart.length) return;
   let msg = `Olá! Vim pelo site Ruan Pedro Imports e gostaria de fazer o seguinte pedido:%0A%0A`;
   let total = 0;
+  const orderItems = [];
   cart.forEach(ci => {
     const p = PRODUCTS.find(x => x.id === ci.id);
     total += p.price * ci.qty;
     const variant = [ci.size, ci.color].filter(Boolean).join(' - ');
     msg += `• ${ci.qty}x ${p.name}${variant ? ' (' + variant + ')' : ''} - R$ ${(p.price*ci.qty).toFixed(2).replace('.',',')}%0A`;
+    orderItems.push({id: p.id, name: p.name, price: p.price, qty: ci.qty, size: ci.size || '', color: ci.color || ''});
   });
+  const rate = (store.coupon && COUPON_INFO) ? COUPON_INFO.rate : 0;
+  const discount = total * rate;
+  const grandTotal = total - discount;
   msg += `%0ASubtotal: R$ ${total.toFixed(2).replace('.',',')}`;
   if(store.coupon && COUPON_INFO){
     msg += `%0ACupom: ${store.coupon}`;
   }
   if(store.user){ msg += `%0A%0ANome: ${store.user.nome}`; }
+
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        customerName: store.user ? store.user.nome : '',
+        customerPhone: store.user ? store.user.telefone : '',
+        customerEmail: store.user ? store.user.email : '',
+        items: orderItems, subtotal: total, discount, total: grandTotal,
+        couponCode: (store.coupon && COUPON_INFO) ? store.coupon : '',
+      }),
+    });
+    const data = await res.json();
+    if(data.id){ msg += `%0A%0APedido: #${data.id.slice(-6).toUpperCase()}`; }
+  } catch(e) {}
+
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+  store.cart = [];
+  store.coupon = '';
+  COUPON_INFO = null;
+  updateCounts();
+  renderCart();
 }
 
 function contactWhatsapp(){
@@ -1394,8 +1551,8 @@ const INFO_CONTENT = {
   privacidade: {
     title: 'Política de privacidade',
     body: `
-      <p>Ao criar uma conta neste site, pedimos nome, telefone, e-mail e data de nascimento apenas para identificar seu cadastro e facilitar o atendimento.</p>
-      <p>Este é um ambiente de demonstração: esses dados ficam salvos somente no armazenamento local do seu próprio navegador e não são enviados a nenhum servidor. Numa loja em operação, essas informações seriam usadas exclusivamente para atendimento e comunicação sobre pedidos, nunca compartilhadas com terceiros sem autorização.</p>
+      <p>Ao criar uma conta neste site, pedimos nome, telefone, e-mail e data de nascimento apenas para identificar seu cadastro e facilitar o atendimento. Esse cadastro fica salvo somente no armazenamento local do seu navegador.</p>
+      <p>Já ao finalizar um pedido ou se inscrever na newsletter, seus dados (nome, telefone, e-mail e os itens do pedido) são enviados e guardados no nosso banco de dados, usados exclusivamente para atendimento e comunicação sobre pedidos e novidades — nunca compartilhados com terceiros sem autorização.</p>
     `
   },
   termos: {
@@ -1403,6 +1560,27 @@ const INFO_CONTENT = {
     body: `
       <p>Este site funciona como catálogo de apresentação da Ruan Pedro Imports. Os pedidos são fechados diretamente com a loja pelo WhatsApp — não há pagamento online por aqui.</p>
       <p>Preços, cores e disponibilidade são confirmados no momento do atendimento. Ao utilizar o site, você concorda com esse funcionamento.</p>
+    `
+  },
+  tamanhos: {
+    title: 'Guia de tamanhos',
+    body: `
+      <p>Use a tabela abaixo como referência para escolher o tamanho ideal do seu tênis. Em caso de dúvida, meça o comprimento do seu pé (do calcanhar à ponta do dedo maior) e compare com a coluna "cm".</p>
+      <table class="size-table">
+        <thead><tr><th>BR</th><th>cm</th><th>US</th></tr></thead>
+        <tbody>
+          <tr><td>36</td><td>22,5</td><td>5</td></tr>
+          <tr><td>37</td><td>23,5</td><td>6</td></tr>
+          <tr><td>38</td><td>24,5</td><td>7</td></tr>
+          <tr><td>39</td><td>25,0</td><td>7.5</td></tr>
+          <tr><td>40</td><td>25,5</td><td>8</td></tr>
+          <tr><td>41</td><td>26,5</td><td>9</td></tr>
+          <tr><td>42</td><td>27,5</td><td>10</td></tr>
+          <tr><td>43</td><td>28,5</td><td>11</td></tr>
+          <tr><td>44</td><td>29,5</td><td>12</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px;">Bonés desta coleção são tamanho único, com regulagem na parte de trás.</p>
     `
   },
 };
@@ -1490,8 +1668,39 @@ function refreshAccountUI(){
     <div class="account-info-row"><span class="k">Telefone</span><span class="v">${user.telefone || '-'}</span></div>
     <div class="account-info-row"><span class="k">E-mail</span><span class="v">${user.email || '-'}</span></div>
     <div class="account-info-row"><span class="k">Nascimento</span><span class="v">${user.nascimento || '-'}</span></div>
+    <div class="orders-section">
+      <h4 class="orders-title">Meus Pedidos</h4>
+      <div id="my-orders-list"><p class="empty-note">Carregando...</p></div>
+    </div>
     <button class="logout-btn" onclick="logout()">Sair da conta</button>
   `;
+  loadMyOrders(user.email);
+}
+
+async function loadMyOrders(email){
+  const list = document.getElementById('my-orders-list');
+  if(!list || !email) return;
+  try {
+    const res = await fetch('/api/orders?email=' + encodeURIComponent(email));
+    const orders = await res.json();
+    if(!orders.length){
+      list.innerHTML = '<p class="empty-note">Você ainda não fez nenhum pedido.</p>';
+      return;
+    }
+    const statusLabels = {novo:'Novo', em_andamento:'Em andamento', concluido:'Concluído', cancelado:'Cancelado'};
+    list.innerHTML = orders.map(o => `
+      <div class="my-order">
+        <div class="my-order-head">
+          <span class="my-order-date">${new Date(o.createdAt).toLocaleDateString('pt-BR')}</span>
+          <span class="my-order-status">${statusLabels[o.status] || o.status}</span>
+        </div>
+        <div class="my-order-items">${o.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</div>
+        <div class="my-order-total tnum">R$ ${Number(o.total).toFixed(2).replace('.',',')}</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<p class="empty-note">Não foi possível carregar seus pedidos agora.</p>';
+  }
 }
 
 /* ============ MODAIS / DRAWERS ============ */
@@ -1645,6 +1854,11 @@ async function loadStoreData(){
   refreshAccountUI();
   updateFilterCount();
   initFlashTimer();
+
+  const hashMatch = location.hash.match(/^#produto\/(.+)$/);
+  if(hashMatch && PRODUCTS.some(p => p.id === hashMatch[1])){
+    openProduct(hashMatch[1]);
+  }
 }
 
 function initCarousel(){
@@ -1696,10 +1910,21 @@ function initFlashTimer(){
 }
 
 /* ============ NEWSLETTER ============ */
-function subscribeNewsletter(e){
+async function subscribeNewsletter(e){
   e.preventDefault();
-  showToast('Cadastro realizado! Você vai receber nossas novidades.');
-  e.target.reset();
+  const form = e.target;
+  const name = document.getElementById('news-nome').value.trim();
+  const email = document.getElementById('news-email').value.trim();
+  try {
+    await fetch('/api/newsletter', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, email }),
+    });
+    showToast('Cadastro realizado! Você vai receber nossas novidades.');
+    form.reset();
+  } catch(err) {
+    showToast('Não foi possível cadastrar agora. Tente novamente.');
+  }
   return false;
 }
 

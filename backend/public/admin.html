@@ -97,6 +97,7 @@
   .btn-secondary{flex:1;padding:12px;border-radius:30px;border:1.5px solid var(--line);font-weight:700;font-size:.76rem;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);}
   .checkbox-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .checkbox-row input{width:auto;}
+  td select{padding:7px 10px;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink);font-weight:600;}
   .form-error{background:#fbeaea;border:1px solid #e3b3b3;color:var(--danger);font-size:.78rem;padding:10px 12px;border-radius:var(--radius-sm);margin-bottom:16px;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
@@ -146,9 +147,11 @@
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="produtos">Produtos</button>
+    <button class="tab-btn" data-tab="pedidos">Pedidos</button>
     <button class="tab-btn" data-tab="categorias">Categorias</button>
     <button class="tab-btn" data-tab="cupons">Cupons</button>
     <button class="tab-btn" data-tab="banners">Banners</button>
+    <button class="tab-btn" data-tab="newsletter">Newsletter</button>
   </nav>
 
   <main>
@@ -161,6 +164,28 @@
       <table>
         <thead><tr><th>Produto</th><th>Categoria</th><th>Marca</th><th>Preço</th><th>Status</th><th></th></tr></thead>
         <tbody id="products-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- PEDIDOS -->
+    <section class="panel" id="panel-pedidos">
+      <div class="panel-head">
+        <h2>Pedidos</h2>
+      </div>
+      <table>
+        <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="panel" id="panel-newsletter">
+      <div class="panel-head">
+        <h2>Inscritos na newsletter</h2>
+      </div>
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Cadastrado em</th></tr></thead>
+        <tbody id="newsletter-tbody"></tbody>
       </table>
     </section>
 
@@ -224,7 +249,7 @@
 
 <script>
 const API = '';
-let categories = [], products = [], coupons = [], banners = [];
+let categories = [], products = [], coupons = [], banners = [], orders = [], subscribers = [];
 let editingType = null, editingId = null;
 
 async function api(path, options = {}) {
@@ -303,13 +328,60 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 /* ===== LOAD DATA ===== */
 async function loadAll() {
-  [categories, products, coupons, banners] = await Promise.all([
+  [categories, products, coupons, banners, orders, subscribers] = await Promise.all([
     api('/api/admin/categories'),
     api('/api/admin/products'),
     api('/api/admin/coupons'),
     api('/api/admin/banners'),
+    api('/api/admin/orders'),
+    api('/api/admin/newsletter'),
   ]);
-  renderProducts(); renderCategories(); renderCoupons(); renderBanners();
+  renderProducts(); renderCategories(); renderCoupons(); renderBanners(); renderOrders(); renderNewsletter();
+}
+
+const ORDER_STATUS_LABELS = { novo: 'Novo', em_andamento: 'Em andamento', concluido: 'Concluído', cancelado: 'Cancelado' };
+
+function renderOrders() {
+  const tbody = document.getElementById('orders-tbody');
+  if (!orders.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum pedido ainda.</td></tr>'; return; }
+  tbody.innerHTML = orders.map(o => {
+    const itemsSummary = o.items.map(i => `${i.qty}x ${i.name}`).join(', ');
+    const date = new Date(o.createdAt).toLocaleString('pt-BR');
+    const options = Object.keys(ORDER_STATUS_LABELS).map(s =>
+      `<option value="${s}" ${o.status === s ? 'selected' : ''}>${ORDER_STATUS_LABELS[s]}</option>`
+    ).join('');
+    return `
+    <tr>
+      <td data-label="Data">${date}</td>
+      <td data-label="Cliente">${o.customerName || 'Visitante'}${o.customerPhone ? `<br><span style="color:var(--muted);font-size:.72rem;">${o.customerPhone}</span>` : ''}</td>
+      <td data-label="Itens" style="max-width:260px;">${itemsSummary}</td>
+      <td data-label="Total"><strong>R$ ${Number(o.total).toFixed(2).replace('.', ',')}</strong></td>
+      <td data-label="Status"><select onchange="updateOrderStatus('${o.id}', this.value)">${options}</select></td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateOrderStatus(id, status) {
+  try {
+    await api(`/api/admin/orders/${id}`, { method: 'PUT', body: JSON.stringify({ status }) });
+    showToast('Status atualizado');
+    orders = await api('/api/admin/orders');
+    renderOrders();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function renderNewsletter() {
+  const tbody = document.getElementById('newsletter-tbody');
+  if (!subscribers.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Nenhum inscrito ainda.</td></tr>'; return; }
+  tbody.innerHTML = subscribers.map(s => `
+    <tr>
+      <td data-label="Nome">${s.name || '—'}</td>
+      <td data-label="E-mail">${s.email}</td>
+      <td data-label="Cadastrado em">${new Date(s.created_at).toLocaleDateString('pt-BR')}</td>
+    </tr>
+  `).join('');
 }
 
 function categoryName(id) {
@@ -440,6 +512,8 @@ function openProductForm(id) {
       <div class="field"><label>Preço (R$)</label><input id="f-price" type="number" step="0.01" value="${p ? p.price : ''}"></div>
       <div class="field"><label>Selo (opcional)</label><input id="f-tag" placeholder="Novo, Mais vendido..." value="${p ? (p.tag || '') : ''}"></div>
     </div>
+    <div class="field"><label>Descrição</label><textarea id="f-description" placeholder="Detalhes do produto para a página individual">${p ? (p.description || '') : ''}</textarea></div>
+    <div class="field"><label>Estoque (deixe em branco para não controlar)</label><input id="f-stock" type="number" min="0" placeholder="Ex: 12" value="${p && p.stock !== null && p.stock !== undefined ? p.stock : ''}"></div>
     <div class="field-row">
       <div class="field"><label>Avaliação (0-5)</label><input id="f-rating" type="number" step="0.1" min="0" max="5" value="${p ? p.rating : 4.5}"></div>
       <div class="field"><label>Nº de avaliações</label><input id="f-reviews" type="number" value="${p ? p.reviews : 0}"></div>
@@ -469,6 +543,8 @@ function openProductForm(id) {
       colors: document.getElementById('f-colors').value.split(',').map(s => s.trim()).filter(Boolean),
       icon: document.getElementById('f-icon').value,
       active: document.getElementById('f-active').checked,
+      description: document.getElementById('f-description').value.trim(),
+      stock: document.getElementById('f-stock').value === '' ? null : parseInt(document.getElementById('f-stock').value),
     };
     if (!payload.name || !payload.categoryId || isNaN(payload.price)) throw new Error('Preencha nome, categoria e preço.');
     if (p) await api(`/api/admin/products/${p.id}`, { method: 'PUT', body: JSON.stringify(payload) });
