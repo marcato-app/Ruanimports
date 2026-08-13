@@ -108,6 +108,45 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* ===== FILTER BAR ===== */
+  .filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+  .filter-bar input, .filter-bar select{
+    padding:9px 12px;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);color:var(--ink);font-size:.8rem;
+  }
+  .filter-bar input:focus, .filter-bar select:focus{outline:none;border-color:var(--gold-3);}
+  .filter-bar input[type=text]{flex:1;min-width:180px;}
+  .filter-bar input[type=date]{min-width:140px;}
+  .filter-bar .btn-clear{
+    padding:9px 16px;border:1.5px solid var(--line);border-radius:var(--radius-sm);font-size:.72rem;font-weight:700;
+    letter-spacing:.03em;text-transform:uppercase;color:var(--muted);white-space:nowrap;
+  }
+  .filter-bar .btn-clear:hover{border-color:var(--gold-3);color:var(--gold-4);}
+
+  /* ===== DASHBOARD ===== */
+  .cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .metric-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .metric-card .label{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px;}
+  .metric-card .value{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;color:var(--ink);}
+  .dash-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;}
+  .dash-box{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;}
+  .dash-box h3{font-size:.95rem;font-style:italic;font-weight:600;margin-bottom:16px;}
+  .chart-wrap{overflow-x:auto;}
+  .bar-col{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:26px;}
+  .bar-col .bar{width:16px;background:var(--gold-grad);border-radius:4px 4px 0 0;min-height:2px;}
+  .bar-col .bar-val{font-size:.6rem;color:var(--muted);white-space:nowrap;}
+  .bar-col .bar-day{font-size:.6rem;color:var(--muted-2);white-space:nowrap;}
+  .top-product-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:.8rem;}
+  .top-product-row .tp-name{flex:0 0 120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .top-product-row .tp-bar-track{flex:1;background:var(--paper-2);border-radius:20px;height:10px;overflow:hidden;}
+  .top-product-row .tp-bar-fill{height:100%;background:var(--gold-grad);border-radius:20px;}
+  .top-product-row .tp-qty{flex:0 0 auto;font-weight:700;color:var(--muted);font-size:.72rem;}
+  .status-breakdown{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;}
+  .status-chip{padding:6px 14px;border-radius:20px;font-size:.7rem;font-weight:700;background:var(--paper-2);color:var(--muted);}
+
+  @media(max-width:900px){
+    .cards-grid{grid-template-columns:repeat(2,1fr);}
+    .dash-grid{grid-template-columns:1fr;}
+  }
   @media(max-width:640px){
     .field-row{grid-template-columns:1fr;}
     table, thead, tbody, th, td, tr{display:block;}
@@ -146,7 +185,8 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="produtos">Produtos</button>
+    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+    <button class="tab-btn" data-tab="produtos">Produtos</button>
     <button class="tab-btn" data-tab="pedidos">Pedidos</button>
     <button class="tab-btn" data-tab="categorias">Categorias</button>
     <button class="tab-btn" data-tab="cupons">Cupons</button>
@@ -155,11 +195,50 @@
   </nav>
 
   <main>
+    <!-- DASHBOARD -->
+    <section class="panel active" id="panel-dashboard">
+      <div class="panel-head">
+        <h2>Dashboard</h2>
+      </div>
+      <div class="cards-grid">
+        <div class="metric-card"><div class="label">Faturamento total</div><div class="value" id="m-revenue">R$ 0,00</div></div>
+        <div class="metric-card"><div class="label">Pedidos</div><div class="value" id="m-orders">0</div></div>
+        <div class="metric-card"><div class="label">Ticket médio</div><div class="value" id="m-avg">R$ 0,00</div></div>
+        <div class="metric-card"><div class="label">Inscritos newsletter</div><div class="value" id="m-subs">0</div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-box">
+          <h3>Faturamento por dia (últimos 14 dias)</h3>
+          <div class="chart-wrap"><div id="revenue-chart" style="display:flex;align-items:flex-end;gap:10px;height:160px;"></div></div>
+        </div>
+        <div class="dash-box">
+          <h3>Produtos mais vendidos</h3>
+          <div id="top-products"></div>
+        </div>
+      </div>
+      <div class="dash-box" style="margin-top:20px;">
+        <h3>Pedidos por status</h3>
+        <div class="status-breakdown" id="status-breakdown"></div>
+      </div>
+    </section>
+
     <!-- PRODUTOS -->
-    <section class="panel active" id="panel-produtos">
+    <section class="panel" id="panel-produtos">
       <div class="panel-head">
         <h2>Produtos</h2>
         <button class="btn-add" onclick="openProductForm()">+ Novo produto</button>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="pf-search" placeholder="Buscar por nome ou marca...">
+        <select id="pf-category"><option value="">Todas categorias</option></select>
+        <select id="pf-color"><option value="">Todas cores</option></select>
+        <select id="pf-size"><option value="">Todos tamanhos</option></select>
+        <select id="pf-status">
+          <option value="">Todos status</option>
+          <option value="1">Ativo</option>
+          <option value="0">Inativo</option>
+        </select>
+        <button class="btn-clear" onclick="clearProductFilters()">Limpar filtros</button>
       </div>
       <table>
         <thead><tr><th>Produto</th><th>Categoria</th><th>Marca</th><th>Preço</th><th>Status</th><th></th></tr></thead>
@@ -171,6 +250,19 @@
     <section class="panel" id="panel-pedidos">
       <div class="panel-head">
         <h2>Pedidos</h2>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="of-search" placeholder="Buscar cliente (nome, telefone, e-mail)...">
+        <input type="date" id="of-from" title="De">
+        <input type="date" id="of-to" title="Até">
+        <select id="of-status">
+          <option value="">Todos status</option>
+          <option value="novo">Novo</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <button class="btn-clear" onclick="clearOrderFilters()">Limpar filtros</button>
       </div>
       <table>
         <thead><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th></tr></thead>
@@ -251,6 +343,8 @@
 const API = '';
 let categories = [], products = [], coupons = [], banners = [], orders = [], subscribers = [];
 let editingType = null, editingId = null;
+let productFilters = { search: '', category: '', color: '', size: '', status: '' };
+let orderFilters = { search: '', from: '', to: '', status: '' };
 
 async function api(path, options = {}) {
   const res = await fetch(API + path, {
@@ -336,15 +430,162 @@ async function loadAll() {
     api('/api/admin/orders'),
     api('/api/admin/newsletter'),
   ]);
-  renderProducts(); renderCategories(); renderCoupons(); renderBanners(); renderOrders(); renderNewsletter();
+  populateProductFilterOptions();
+  renderDashboard(); renderProducts(); renderCategories(); renderCoupons(); renderBanners(); renderOrders(); renderNewsletter();
+}
+
+/* ===== PRODUCT FILTERS ===== */
+function populateProductFilterOptions() {
+  const catSel = document.getElementById('pf-category');
+  const keepCat = catSel.value;
+  catSel.innerHTML = '<option value="">Todas categorias</option>' +
+    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  catSel.value = keepCat;
+
+  const colors = [...new Set(products.flatMap(p => p.colors || []))].sort();
+  const colorSel = document.getElementById('pf-color');
+  const keepColor = colorSel.value;
+  colorSel.innerHTML = '<option value="">Todas cores</option>' + colors.map(c => `<option value="${c}">${c}</option>`).join('');
+  colorSel.value = keepColor;
+
+  const sizes = [...new Set(products.flatMap(p => p.sizes || []))].sort();
+  const sizeSel = document.getElementById('pf-size');
+  const keepSize = sizeSel.value;
+  sizeSel.innerHTML = '<option value="">Todos tamanhos</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+  sizeSel.value = keepSize;
+}
+
+function getFilteredProducts() {
+  const q = productFilters.search.trim().toLowerCase();
+  return products.filter(p => {
+    if (q && !(p.name.toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q))) return false;
+    if (productFilters.category && p.categoryId !== productFilters.category) return false;
+    if (productFilters.color && !(p.colors || []).includes(productFilters.color)) return false;
+    if (productFilters.size && !(p.sizes || []).includes(productFilters.size)) return false;
+    if (productFilters.status !== '' && String(p.active ? 1 : 0) !== productFilters.status) return false;
+    return true;
+  });
+}
+
+['pf-search'].forEach(id => document.getElementById(id).addEventListener('input', (e) => {
+  productFilters.search = e.target.value; renderProducts();
+}));
+['pf-category', 'pf-color', 'pf-size', 'pf-status'].forEach(id => {
+  const key = id.replace('pf-', '');
+  document.getElementById(id).addEventListener('change', (e) => {
+    productFilters[key] = e.target.value; renderProducts();
+  });
+});
+function clearProductFilters() {
+  productFilters = { search: '', category: '', color: '', size: '', status: '' };
+  document.getElementById('pf-search').value = '';
+  document.getElementById('pf-category').value = '';
+  document.getElementById('pf-color').value = '';
+  document.getElementById('pf-size').value = '';
+  document.getElementById('pf-status').value = '';
+  renderProducts();
+}
+
+/* ===== ORDER FILTERS ===== */
+function getFilteredOrders() {
+  const q = orderFilters.search.trim().toLowerCase();
+  return orders.filter(o => {
+    if (q) {
+      const hay = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customerEmail || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (orderFilters.status && o.status !== orderFilters.status) return false;
+    const orderDate = (o.createdAt || '').slice(0, 10);
+    if (orderFilters.from && orderDate < orderFilters.from) return false;
+    if (orderFilters.to && orderDate > orderFilters.to) return false;
+    return true;
+  });
+}
+
+['of-search'].forEach(id => document.getElementById(id).addEventListener('input', (e) => {
+  orderFilters.search = e.target.value; renderOrders();
+}));
+['of-from', 'of-to', 'of-status'].forEach(id => {
+  const key = id.replace('of-', '');
+  document.getElementById(id).addEventListener('change', (e) => {
+    orderFilters[key] = e.target.value; renderOrders();
+  });
+});
+function clearOrderFilters() {
+  orderFilters = { search: '', from: '', to: '', status: '' };
+  document.getElementById('of-search').value = '';
+  document.getElementById('of-from').value = '';
+  document.getElementById('of-to').value = '';
+  document.getElementById('of-status').value = '';
+  renderOrders();
+}
+
+/* ===== DASHBOARD ===== */
+function renderDashboard() {
+  const validOrders = orders.filter(o => o.status !== 'cancelado');
+  const totalRevenue = validOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  document.getElementById('m-revenue').textContent = 'R$ ' + totalRevenue.toFixed(2).replace('.', ',');
+  document.getElementById('m-orders').textContent = orders.length;
+  document.getElementById('m-avg').textContent = 'R$ ' + (validOrders.length ? totalRevenue / validOrders.length : 0).toFixed(2).replace('.', ',');
+  document.getElementById('m-subs').textContent = subscribers.length;
+
+  // Revenue by day (last 14 days)
+  const days = 14;
+  const buckets = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    buckets.push({ key: d.toISOString().slice(0, 10), label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), total: 0 });
+  }
+  const byDate = {};
+  buckets.forEach(b => byDate[b.key] = b);
+  validOrders.forEach(o => {
+    const key = (o.createdAt || '').slice(0, 10);
+    if (byDate[key]) byDate[key].total += Number(o.total || 0);
+  });
+  const maxTotal = Math.max(1, ...buckets.map(b => b.total));
+  const chart = document.getElementById('revenue-chart');
+  chart.innerHTML = buckets.map(b => `
+    <div class="bar-col">
+      <div class="bar-val">${b.total > 0 ? 'R$' + Math.round(b.total) : ''}</div>
+      <div class="bar" style="height:${Math.max(2, (b.total / maxTotal) * 120)}px;"></div>
+      <div class="bar-day">${b.label}</div>
+    </div>
+  `).join('');
+
+  // Top products by quantity sold
+  const qtyByName = {};
+  validOrders.forEach(o => (o.items || []).forEach(item => {
+    qtyByName[item.name] = (qtyByName[item.name] || 0) + (item.qty || 0);
+  }));
+  const top = Object.entries(qtyByName).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const maxQty = Math.max(1, ...top.map(t => t[1]));
+  const topEl = document.getElementById('top-products');
+  topEl.innerHTML = top.length ? top.map(([name, qty]) => `
+    <div class="top-product-row">
+      <div class="tp-name" title="${name}">${name}</div>
+      <div class="tp-bar-track"><div class="tp-bar-fill" style="width:${(qty / maxQty) * 100}%;"></div></div>
+      <div class="tp-qty">${qty}</div>
+    </div>
+  `).join('') : '<p style="color:var(--muted);font-size:.8rem;">Nenhuma venda ainda.</p>';
+
+  // Status breakdown
+  const statusCounts = {};
+  orders.forEach(o => statusCounts[o.status] = (statusCounts[o.status] || 0) + 1);
+  const breakdownEl = document.getElementById('status-breakdown');
+  breakdownEl.innerHTML = Object.keys(ORDER_STATUS_LABELS).map(s =>
+    `<span class="status-chip">${ORDER_STATUS_LABELS[s]}: ${statusCounts[s] || 0}</span>`
+  ).join('');
 }
 
 const ORDER_STATUS_LABELS = { novo: 'Novo', em_andamento: 'Em andamento', concluido: 'Concluído', cancelado: 'Cancelado' };
 
 function renderOrders() {
   const tbody = document.getElementById('orders-tbody');
-  if (!orders.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum pedido ainda.</td></tr>'; return; }
-  tbody.innerHTML = orders.map(o => {
+  const filtered = getFilteredOrders();
+  if (!filtered.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum pedido encontrado.</td></tr>'; return; }
+  tbody.innerHTML = filtered.map(o => {
     const itemsSummary = o.items.map(i => `${i.qty}x ${i.name}`).join(', ');
     const date = new Date(o.createdAt).toLocaleString('pt-BR');
     const options = Object.keys(ORDER_STATUS_LABELS).map(s =>
@@ -392,8 +633,9 @@ function categoryName(id) {
 /* ===== RENDER TABLES ===== */
 function renderProducts() {
   const tbody = document.getElementById('products-tbody');
-  if (!products.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum produto cadastrado.</td></tr>'; return; }
-  tbody.innerHTML = products.map(p => `
+  const filtered = getFilteredProducts();
+  if (!filtered.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${products.length ? 'Nenhum produto encontrado com esses filtros.' : 'Nenhum produto cadastrado.'}</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(p => `
     <tr>
       <td data-label="Produto"><strong>${p.name}</strong></td>
       <td data-label="Categoria">${categoryName(p.categoryId)}</td>
