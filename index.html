@@ -374,7 +374,22 @@
   .cart-item .thumb svg{width:58%;height:58%;stroke:var(--gold-2);color:var(--gold-2);}
   .cart-item .ci-info{flex:1;}
   .cart-item h4{font-size:.82rem;font-weight:700;margin-bottom:3px;color:var(--ink);}
+  .cart-item .ci-variant{font-size:.7rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em;}
   .cart-item .ci-price{font-size:.8rem;font-weight:800;color:var(--gold-4);}
+
+  /* ===== QUICK ADD ===== */
+  .qa-product{display:flex;gap:14px;align-items:center;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--line);}
+  .qa-thumb{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .qa-thumb svg{width:58%;height:58%;stroke:var(--gold-2);color:var(--gold-2);}
+  .qa-info h4{font-size:.9rem;font-weight:700;color:var(--ink);margin:2px 0;}
+  .qa-cat{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+  .qa-price{font-size:.86rem;font-weight:800;color:var(--gold-4);}
+  .qa-group{margin-bottom:22px;}
+  .qa-group label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .qa-options{display:flex;flex-wrap:wrap;gap:8px;}
+  .qa-chip{border:1.5px solid var(--line);border-radius:20px;padding:9px 16px;font-size:.8rem;font-weight:600;color:var(--ink);transition:.15s;}
+  .qa-chip:hover{border-color:var(--gold-3);}
+  .qa-chip.active{border-color:var(--gold-3);background:var(--gold-3);color:var(--ink);font-weight:800;}
   .qty-ctrl{display:flex;align-items:center;gap:12px;margin-top:8px;}
   .qty-ctrl button{width:24px;height:24px;border:1px solid var(--line);border-radius:50%;font-weight:700;color:var(--ink);}
   .remove-link{font-size:.7rem;color:var(--muted);font-weight:600;margin-top:8px;display:inline-block;border-bottom:1px solid var(--muted-2);}
@@ -805,6 +820,17 @@
   <div class="footer-bottom">© 2026 Ruan Pedro Imports. Todos os direitos reservados. — Protótipo de demonstração.</div>
 </footer>
 
+<!-- ===== QUICK ADD MODAL ===== -->
+<div class="overlay center" id="overlay-quickadd">
+  <div class="modal-box">
+    <div class="drawer-header">
+      <h3>Escolher opções</h3>
+      <button class="close-btn" onclick="closeAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drawer-body" id="quickadd-body"></div>
+  </div>
+</div>
+
 <!-- ===== MOBILE MENU DRAWER ===== -->
 <div class="overlay" id="overlay-menu" style="justify-content:flex-start;">
   <div class="drawer from-left">
@@ -1052,7 +1078,7 @@ function cardHTML(p){
       <div class="rating">${starsHTML(p.rating)}<span class="rating-num tnum">${p.rating.toFixed(1)}</span><span class="rating-count">(${p.reviews})</span></div>
       <div class="price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
       <div class="installments tnum">ou 3x de R$ ${(p.price/3).toFixed(2).replace('.',',')} sem juros</div>
-      <button class="add-btn" onclick="addToCart('${p.id}')">
+      <button class="add-btn" onclick="openQuickAdd('${p.id}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
         Adicionar
       </button>
@@ -1171,35 +1197,104 @@ function renderFavs(){
         <h4>${p.name}</h4>
         <div class="ci-price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
         <a class="remove-link" onclick="toggleFav('${p.id}')">Remover</a>
-        <button class="add-btn" style="margin-top:10px;width:auto;padding:8px 14px;display:inline-flex;" onclick="addToCart('${p.id}')">Adicionar ao carrinho</button>
+        <button class="add-btn" style="margin-top:10px;width:auto;padding:8px 14px;display:inline-flex;" onclick="openQuickAdd('${p.id}')">Adicionar ao carrinho</button>
       </div>
     </div>
   `).join('');
 }
 
 /* ============ CARRINHO ============ */
-function addToCart(id){
+let quickAddState = null;
+
+function openQuickAdd(id){
+  const p = PRODUCTS.find(x => x.id === id);
+  const needsChoice = p.sizes.length > 1 || p.colors.length > 1;
+  if(!needsChoice){
+    addToCart(id, p.sizes[0], p.colors[0], 1);
+    return;
+  }
+  quickAddState = {id, size: p.sizes[0], color: p.colors[0], qty: 1};
+  renderQuickAdd();
+  closeAll();
+  document.getElementById('overlay-quickadd').classList.add('open');
+}
+
+function renderQuickAdd(){
+  const p = PRODUCTS.find(x => x.id === quickAddState.id);
+  const body = document.getElementById('quickadd-body');
+  body.innerHTML = `
+    <div class="qa-product">
+      <div class="qa-thumb">${p.icon}</div>
+      <div class="qa-info">
+        <div class="qa-cat">${p.cat === 'tenis' ? 'Tênis' : 'Boné'} · ${p.brand}</div>
+        <h4>${p.name}</h4>
+        <div class="qa-price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
+      </div>
+    </div>
+    ${p.sizes.length > 1 ? `
+    <div class="qa-group">
+      <label>Tamanho</label>
+      <div class="qa-options">
+        ${p.sizes.map(s => `<button class="qa-chip ${quickAddState.size === s ? 'active' : ''}" onclick="setQuickAdd('size','${s}')">${s}</button>`).join('')}
+      </div>
+    </div>` : ''}
+    ${p.colors.length > 1 ? `
+    <div class="qa-group">
+      <label>Cor</label>
+      <div class="qa-options">
+        ${p.colors.map(c => `<button class="qa-chip ${quickAddState.color === c ? 'active' : ''}" onclick="setQuickAdd('color','${c}')">${c}</button>`).join('')}
+      </div>
+    </div>` : ''}
+    <div class="qa-group">
+      <label>Quantidade</label>
+      <div class="qty-ctrl">
+        <button onclick="setQuickAddQty(-1)">-</button>
+        <span class="tnum">${quickAddState.qty}</span>
+        <button onclick="setQuickAddQty(1)">+</button>
+      </div>
+    </div>
+    <button class="btn-full" onclick="confirmQuickAdd()">Adicionar ao carrinho</button>
+  `;
+}
+
+function setQuickAdd(facet, value){
+  quickAddState[facet] = value;
+  renderQuickAdd();
+}
+
+function setQuickAddQty(delta){
+  quickAddState.qty = Math.max(1, quickAddState.qty + delta);
+  renderQuickAdd();
+}
+
+function confirmQuickAdd(){
+  addToCart(quickAddState.id, quickAddState.size, quickAddState.color, quickAddState.qty);
+  closeAll();
+}
+
+function addToCart(id, size, color, qty){
+  qty = qty || 1;
   let cart = store.cart;
-  const found = cart.find(i => i.id === id);
-  if(found){ found.qty++; } else { cart.push({id, qty:1}); }
+  const found = cart.find(i => i.id === id && i.size === size && i.color === color);
+  if(found){ found.qty += qty; } else { cart.push({id, size, color, qty}); }
   store.cart = cart;
   updateCounts();
   showToast('Produto adicionado ao carrinho');
 }
 
-function changeQty(id, delta){
+function changeQty(id, size, color, delta){
   let cart = store.cart;
-  const item = cart.find(i => i.id === id);
+  const item = cart.find(i => i.id === id && i.size === size && i.color === color);
   if(!item) return;
   item.qty += delta;
-  if(item.qty <= 0){ cart = cart.filter(i => i.id !== id); }
+  if(item.qty <= 0){ cart = cart.filter(i => i !== item); }
   store.cart = cart;
   renderCart();
   updateCounts();
 }
 
-function removeFromCart(id){
-  store.cart = store.cart.filter(i => i.id !== id);
+function removeFromCart(id, size, color){
+  store.cart = store.cart.filter(i => !(i.id === id && i.size === size && i.color === color));
   renderCart();
   updateCounts();
 }
@@ -1220,18 +1315,20 @@ function renderCart(){
   body.innerHTML = cart.map(ci => {
     const p = PRODUCTS.find(x => x.id === ci.id);
     total += p.price * ci.qty;
+    const variant = [ci.size, ci.color].filter(Boolean).join(' · ');
     return `
     <div class="cart-item">
       <div class="thumb">${p.icon}</div>
       <div class="ci-info">
         <h4>${p.name}</h4>
+        ${variant ? `<div class="ci-variant">${variant}</div>` : ''}
         <div class="ci-price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
         <div class="qty-ctrl">
-          <button onclick="changeQty('${p.id}', -1)">-</button>
+          <button onclick="changeQty('${p.id}','${ci.size || ''}','${ci.color || ''}', -1)">-</button>
           <span class="tnum">${ci.qty}</span>
-          <button onclick="changeQty('${p.id}', 1)">+</button>
+          <button onclick="changeQty('${p.id}','${ci.size || ''}','${ci.color || ''}', 1)">+</button>
         </div>
-        <a class="remove-link" onclick="removeFromCart('${p.id}')">Remover</a>
+        <a class="remove-link" onclick="removeFromCart('${p.id}','${ci.size || ''}','${ci.color || ''}')">Remover</a>
       </div>
     </div>`;
   }).join('');
@@ -1262,7 +1359,8 @@ function checkoutWhatsapp(){
   cart.forEach(ci => {
     const p = PRODUCTS.find(x => x.id === ci.id);
     total += p.price * ci.qty;
-    msg += `• ${ci.qty}x ${p.name} - R$ ${(p.price*ci.qty).toFixed(2).replace('.',',')}%0A`;
+    const variant = [ci.size, ci.color].filter(Boolean).join(' - ');
+    msg += `• ${ci.qty}x ${p.name}${variant ? ' (' + variant + ')' : ''} - R$ ${(p.price*ci.qty).toFixed(2).replace('.',',')}%0A`;
   });
   msg += `%0ASubtotal: R$ ${total.toFixed(2).replace('.',',')}`;
   const activeCoupon = store.coupon;
