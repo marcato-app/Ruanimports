@@ -50,13 +50,6 @@
   .view{display:none;}
   .view.active{display:block;}
 
-  /* ===== TOP PROMO BAR ===== */
-  .promo-bar{
-    background:var(--ink);color:var(--gold-2);text-align:center;
-    font-size:.7rem;letter-spacing:.13em;padding:9px 10px;font-weight:700;
-    text-transform:uppercase;border-bottom:1px solid var(--line-dark);
-  }
-
   /* ===== HEADER ===== */
   header{background:var(--ink);position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(212,175,55,.25);}
   .header-inner{
@@ -89,7 +82,6 @@
   nav.main-nav button:hover{color:var(--on-dark);background:rgba(212,175,55,.1);}
   nav.main-nav button.active{color:var(--ink);background:var(--gold-grad);}
 
-  .header-search{padding:12px 24px;background:var(--ink);border-top:1px solid var(--line-dark);}
   .search-box{
     max-width:460px;margin:0 auto;display:flex;align-items:center;gap:10px;
     background:var(--ink-3);border:1px solid var(--line-dark);border-radius:30px;padding:9px 16px;transition:.15s;
@@ -339,11 +331,72 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .toast svg{width:14px;height:14px;stroke:var(--gold-3);flex-shrink:0;}
+
+  /* ===== VIEW TRANSITION ===== */
+  .view.active{animation:viewFadeIn .4s ease;}
+  @keyframes viewFadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ===== SCROLL REVEAL ===== */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  /* ===== MOBILE MENU DRAWER ===== */
+  @keyframes slideInLeft{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+  .drawer.from-left{animation:slideInLeft .22s ease;}
+  .menu-links li{border-bottom:1px solid var(--line);}
+  .menu-links li button{width:100%;text-align:left;padding:17px 4px;font-size:1rem;font-weight:600;color:var(--ink);transition:.15s;}
+  .menu-links li button:hover{color:var(--gold-4);padding-left:6px;}
+
+  /* ===== CATALOG TOOLBAR ===== */
+  .catalog-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:30px;}
+  .catalog-toolbar .tabs{margin-bottom:0;}
+  .toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .catalog-search{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:30px;padding:9px 16px;background:var(--paper);flex:1 1 200px;min-width:0;}
+  .catalog-search:focus-within{border-color:var(--gold-3);box-shadow:0 0 0 3px rgba(212,175,55,.12);}
+  .catalog-search svg{width:14px;height:14px;stroke:var(--muted);flex-shrink:0;}
+  .catalog-search input{border:none;outline:none;background:none;font-size:.82rem;width:100%;min-width:0;color:var(--ink);}
+  .filter-btn{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--ink);border-radius:30px;padding:10px 18px;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);white-space:nowrap;transition:.15s;}
+  .filter-btn:hover{background:var(--ink);color:var(--gold-2);}
+  .filter-btn svg{width:14px;height:14px;}
+  .badge-inline{background:var(--gold-grad);color:var(--ink);font-size:.65rem;font-weight:800;width:17px;height:17px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;}
+
+  /* ===== FILTERS DRAWER ===== */
+  .filter-group{margin-bottom:28px;}
+  .filter-group h4{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--ink);margin-bottom:14px;}
+  .filter-options{display:flex;flex-wrap:wrap;gap:9px;}
+  .filter-check{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);border-radius:20px;padding:8px 14px;font-size:.78rem;cursor:pointer;transition:.15s;color:var(--ink);}
+  .filter-check:has(input:checked){border-color:var(--gold-3);background:var(--paper-2);}
+  .filter-check input{accent-color:var(--gold-4);}
+
+  /* ===== 3D SHOWCASE ===== */
+  .showcase{max-width:var(--wrap);margin:0 auto;padding:8px 24px 4px;}
+  .showcase-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media(max-width:700px){.showcase-inner{grid-template-columns:1fr;max-width:280px;margin:0 auto;}}
+  .showcase-item{text-align:center;}
+  .showcase-stage{
+    aspect-ratio:1/1;background:radial-gradient(ellipse at 35% 30%, var(--ink-3), var(--ink));border-radius:var(--radius);
+    display:flex;align-items:center;justify-content:center;perspective:900px;overflow:hidden;position:relative;
+  }
+  .showcase-stage::after{
+    content:"";position:absolute;left:50%;bottom:12%;width:52%;height:9%;
+    background:radial-gradient(ellipse, rgba(0,0,0,.55), transparent 72%);transform:translateX(-50%);
+  }
+  .showcase-spin{width:56%;height:56%;transform-style:preserve-3d;animation:spin3d 8s linear infinite;}
+  .showcase-spin svg{width:100%;height:100%;stroke:var(--gold-2);color:var(--gold-2);filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));}
+  @keyframes spin3d{
+    0%{transform:rotateY(0deg) rotateX(8deg);}
+    100%{transform:rotateY(360deg) rotateX(8deg);}
+  }
+  .showcase-item span{display:block;margin-top:14px;font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+
+  @media (prefers-reduced-motion:reduce){
+    .showcase-spin{animation:none;}
+    .view.active{animation:none;}
+    .reveal{opacity:1;transform:none;transition:none;}
+  }
 </style>
 </head>
 <body>
-
-<div class="promo-bar">✦ Peças importadas selecionadas ✦ Envio para todo o Brasil ✦ Atendimento direto via WhatsApp ✦</div>
 
 <header>
   <div class="header-inner">
@@ -358,6 +411,9 @@
     </button>
 
     <div class="header-icons">
+      <button class="icon-btn" id="btn-search" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </button>
       <button class="icon-btn" id="btn-favs" aria-label="Favoritos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7.5-4.9-10-9.3C.4 8 2 4.5 5.6 4c2-.3 3.8.6 4.9 2.3C11.6 4.6 13.4 3.7 15.4 4 19 4.5 20.6 8 20 11.7 17.5 16.1 12 21 12 21z"/></svg>
         <span class="badge" id="fav-count">0</span>
@@ -382,12 +438,6 @@
     </ul>
   </nav>
 
-  <div class="header-search">
-    <div class="search-box">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input type="text" placeholder="Buscar tênis, bonés..." id="search-input">
-    </div>
-  </div>
 </header>
 
 <!-- ===================== HOME VIEW ===================== -->
@@ -406,7 +456,40 @@
     </div>
   </section>
 
-  <section class="coupons">
+  <section class="showcase reveal">
+    <div class="showcase-inner">
+      <div class="showcase-item">
+        <div class="showcase-stage"><div class="showcase-spin"><svg viewBox="0 0 64 40" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M4 30C4 26 8 22 14 20L26 14C30 12 35 12 39 14L48 20C54 20 58 22 60 26L60 30C60 33 58 34 54 34L10 34C6 34 4 33 4 30Z"/><path d="M6 31L58 31"/><path d="M8 33L56 33"/><path d="M27 23L34 16M31 25L38 18M35 27L42 20"/></svg></div></div>
+        <span>Tênis</span>
+      </div>
+      <div class="showcase-item">
+        <div class="showcase-stage"><div class="showcase-spin" style="animation-delay:-2.4s;"><svg viewBox="0 0 64 46" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M10 28C10 15 20 6 33 6C46 6 55 14 55 25"/><path d="M10 28C2 29 -1 35 3 40C6 42 11 41 16 39C26 36 38 30 47 24"/><circle cx="33" cy="6" r="2" fill="currentColor" stroke="none"/><path d="M33 9C33 16 34 22 40 27"/><path d="M33 9C29 15 22 20 12 26"/></svg></div></div>
+        <span>Boné</span>
+      </div>
+      <div class="showcase-item">
+        <div class="showcase-stage"><div class="showcase-spin" style="animation-delay:-4.8s;"><svg viewBox="0 0 64 60" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M20 5L5 14L11 24L16 19V54H48V19L53 24L59 14L44 5L37 9C37 9 35 13 32 13C29 13 27 9 27 9L20 5Z"/></svg></div></div>
+        <span>Camisa</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="cat-section reveal">
+    <div class="section-head">
+      <div><span class="eyebrow">Direto ao ponto</span><h2>Encontre por categoria</h2></div>
+    </div>
+    <div class="cat-tiles">
+      <button class="cat-tile" onclick="filterCat('tenis')">
+        <div class="cat-icon-badge"><svg viewBox="0 0 64 40" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M4 30C4 26 8 22 14 20L26 14C30 12 35 12 39 14L48 20C54 20 58 22 60 26L60 30C60 33 58 34 54 34L10 34C6 34 4 33 4 30Z"/><path d="M6 31L58 31"/></svg></div>
+        <div><h3>Tênis</h3><span>Ver coleção →</span></div>
+      </button>
+      <button class="cat-tile" onclick="filterCat('bone')">
+        <div class="cat-icon-badge"><svg viewBox="0 0 64 46" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M10 28C10 15 20 6 33 6C46 6 55 14 55 25"/><path d="M10 28C2 29 -1 35 3 40C6 42 11 41 16 39C26 36 38 30 47 24"/><circle cx="33" cy="6" r="2" fill="currentColor" stroke="none"/></svg></div>
+        <div><h3>Bonés</h3><span>Ver coleção →</span></div>
+      </button>
+    </div>
+  </section>
+
+  <section class="coupons reveal">
     <div class="coupon-row">
       <button class="coupon-card" onclick="copyCoupon('BEMVINDO10')">
         <div class="coupon-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 10a2 2 0 0 0 0 4v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3z"/><path d="M12 6v12" stroke-dasharray="2 3"/></svg></div>
@@ -431,23 +514,7 @@
     </div>
   </section>
 
-  <section class="cat-section">
-    <div class="section-head">
-      <div><span class="eyebrow">Encontre o que procura</span><h2>Comprar por categoria</h2></div>
-    </div>
-    <div class="cat-tiles">
-      <button class="cat-tile" onclick="filterCat('tenis')">
-        <div class="cat-icon-badge"><svg viewBox="0 0 64 40" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M4 30C4 26 8 22 14 20L26 14C30 12 35 12 39 14L48 20C54 20 58 22 60 26L60 30C60 33 58 34 54 34L10 34C6 34 4 33 4 30Z"/><path d="M6 31L58 31"/></svg></div>
-        <div><h3>Tênis</h3><span>Ver coleção →</span></div>
-      </button>
-      <button class="cat-tile" onclick="filterCat('bone')">
-        <div class="cat-icon-badge"><svg viewBox="0 0 64 46" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M10 28C10 15 20 6 33 6C46 6 55 14 55 25"/><path d="M10 28C2 29 -1 35 3 40C6 42 11 41 16 39C26 36 38 30 47 24"/><circle cx="33" cy="6" r="2" fill="currentColor" stroke="none"/></svg></div>
-        <div><h3>Bonés</h3><span>Ver coleção →</span></div>
-      </button>
-    </div>
-  </section>
-
-  <section class="section">
+  <section class="section reveal">
     <div class="section-head">
       <div><span class="eyebrow">Acabou de chegar</span><h2>Novidades</h2></div>
       <button class="section-link" onclick="filterCat('todos')">Ver todos os produtos</button>
@@ -461,7 +528,7 @@
     </button>
   </div>
 
-  <section class="benefits">
+  <section class="benefits reveal">
     <div class="benefits-inner">
       <div>
         <div class="b-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="1.8"/><circle cx="18.5" cy="18.5" r="1.8"/></svg></div>
@@ -482,7 +549,7 @@
     </div>
   </section>
 
-  <section class="about-band">
+  <section class="about-band reveal">
     <p class="about-eyebrow">Sobre a Ruan Pedro Imports</p>
     <p class="about-quote">"Cada peça é escolhida a dedo — do tênis ao boné — pensando em quem valoriza estilo com identidade própria."</p>
   </section>
@@ -501,10 +568,23 @@
     <div class="section-head">
       <div><span class="eyebrow">Coleção 2026</span><h2>Catálogo completo</h2></div>
     </div>
-    <div class="tabs">
-      <button class="tab-btn active" data-cat="todos" onclick="filterCat('todos')">Todos</button>
-      <button class="tab-btn" data-cat="tenis" onclick="filterCat('tenis')">Tênis</button>
-      <button class="tab-btn" data-cat="bone" onclick="filterCat('bone')">Bonés</button>
+    <div class="catalog-toolbar">
+      <div class="tabs">
+        <button class="tab-btn active" data-cat="todos" onclick="filterCat('todos')">Todos</button>
+        <button class="tab-btn" data-cat="tenis" onclick="filterCat('tenis')">Tênis</button>
+        <button class="tab-btn" data-cat="bone" onclick="filterCat('bone')">Bonés</button>
+      </div>
+      <div class="toolbar-right">
+        <div class="catalog-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="search-input" placeholder="Buscar tênis, bonés...">
+        </div>
+        <button class="filter-btn" id="btn-filters">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          Filtros
+          <span class="badge-inline" id="filter-count" style="display:none;">0</span>
+        </button>
+      </div>
     </div>
     <div class="grid" id="product-grid"></div>
   </section>
@@ -548,6 +628,40 @@
   </div>
   <div class="footer-bottom">© 2026 Ruan Pedro Imports. Todos os direitos reservados. — Protótipo de demonstração.</div>
 </footer>
+
+<!-- ===== MOBILE MENU DRAWER ===== -->
+<div class="overlay" id="overlay-menu" style="justify-content:flex-start;">
+  <div class="drawer from-left">
+    <div class="drawer-header">
+      <h3>Menu</h3>
+      <button class="close-btn" onclick="closeAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drawer-body">
+      <ul class="menu-links">
+        <li><button onclick="closeAll(); goHome();">Início</button></li>
+        <li><button onclick="closeAll(); filterCat('tenis');">Tênis</button></li>
+        <li><button onclick="closeAll(); filterCat('bone');">Bonés</button></li>
+        <li><button onclick="openFavs();">Favoritos</button></li>
+        <li><button onclick="document.getElementById('btn-account').click();">Minha Conta</button></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FILTERS DRAWER ===== -->
+<div class="overlay" id="overlay-filters">
+  <div class="drawer">
+    <div class="drawer-header">
+      <h3>Filtros</h3>
+      <button class="close-btn" onclick="closeAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drawer-body" id="filters-body"></div>
+    <div class="drawer-footer">
+      <button class="btn-full" onclick="applyFilters()">Aplicar filtros</button>
+      <button class="logout-btn" style="margin-top:10px;" onclick="clearFilters()">Limpar filtros</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== AUTH MODAL ===== -->
 <div class="overlay center" id="overlay-auth">
@@ -642,16 +756,69 @@ const ICON_BONE = `<svg viewBox="0 0 64 46" fill="none" stroke="currentColor" st
 
 /* ============ PRODUTOS FICTÍCIOS ============ */
 const PRODUCTS = [
-  {id:'t1', cat:'tenis', name:'Tênis Air Prime Gold', price:349.90, tag:'Novo', icon:ICON_TENIS},
-  {id:'t2', cat:'tenis', name:'Tênis Runner Black Edition', price:289.90, tag:'', icon:ICON_TENIS},
-  {id:'t3', cat:'tenis', name:'Tênis Street Classic', price:259.90, tag:'', icon:ICON_TENIS},
-  {id:'t4', cat:'tenis', name:'Tênis Ultra Comfort White', price:319.90, tag:'Mais vendido', icon:ICON_TENIS},
-  {id:'t5', cat:'tenis', name:'Tênis Urban Flex Cinza', price:279.90, tag:'', icon:ICON_TENIS},
-  {id:'b1', cat:'bone', name:'Boné Snapback Gold Crown', price:89.90, tag:'Novo', icon:ICON_BONE},
-  {id:'b2', cat:'bone', name:'Boné Aba Reta Black Label', price:79.90, tag:'', icon:ICON_BONE},
-  {id:'b3', cat:'bone', name:'Boné Trucker Premium', price:69.90, tag:'', icon:ICON_BONE},
-  {id:'b4', cat:'bone', name:'Boné Dad Hat Classic', price:59.90, tag:'Mais vendido', icon:ICON_BONE},
+  {id:'t1', cat:'tenis', name:'Tênis Air Prime Gold', price:349.90, tag:'Novo', icon:ICON_TENIS, brand:'Nike', sizes:['38','39','40','41','42','43'], colors:['Dourado','Preto']},
+  {id:'t2', cat:'tenis', name:'Tênis Runner Black Edition', price:289.90, tag:'', icon:ICON_TENIS, brand:'Adidas', sizes:['39','40','41','42','43','44'], colors:['Preto']},
+  {id:'t3', cat:'tenis', name:'Tênis Street Classic', price:259.90, tag:'', icon:ICON_TENIS, brand:'Puma', sizes:['38','39','40','41','42'], colors:['Branco','Preto']},
+  {id:'t4', cat:'tenis', name:'Tênis Ultra Comfort White', price:319.90, tag:'Mais vendido', icon:ICON_TENIS, brand:'New Balance', sizes:['39','40','41','42','43'], colors:['Branco']},
+  {id:'t5', cat:'tenis', name:'Tênis Urban Flex Cinza', price:279.90, tag:'', icon:ICON_TENIS, brand:'Nike', sizes:['38','39','40','41','42','43','44'], colors:['Cinza']},
+  {id:'b1', cat:'bone', name:'Boné Snapback Gold Crown', price:89.90, tag:'Novo', icon:ICON_BONE, brand:'New Era', sizes:['Único'], colors:['Dourado','Preto']},
+  {id:'b2', cat:'bone', name:'Boné Aba Reta Black Label', price:79.90, tag:'', icon:ICON_BONE, brand:'New Era', sizes:['Único'], colors:['Preto']},
+  {id:'b3', cat:'bone', name:'Boné Trucker Premium', price:69.90, tag:'', icon:ICON_BONE, brand:'Adidas', sizes:['Único'], colors:['Bege','Preto']},
+  {id:'b4', cat:'bone', name:'Boné Dad Hat Classic', price:59.90, tag:'Mais vendido', icon:ICON_BONE, brand:'Nike', sizes:['Único'], colors:['Preto','Cinza']},
 ];
+
+let filters = {brand:new Set(), size:new Set(), color:new Set()};
+
+function uniqueValues(key){
+  const set = new Set();
+  PRODUCTS.forEach(p => p[key].forEach(v => set.add(v)));
+  return [...set].sort();
+}
+
+function renderFiltersBody(){
+  const body = document.getElementById('filters-body');
+  const groups = [
+    {key:'brand', label:'Marca', values: [...new Set(PRODUCTS.map(p => p.brand))].sort()},
+    {key:'size', label:'Tamanho', values: uniqueValues('sizes')},
+    {key:'color', label:'Cor', values: uniqueValues('colors')},
+  ];
+  body.innerHTML = groups.map(g => `
+    <div class="filter-group">
+      <h4>${g.label}</h4>
+      <div class="filter-options">
+        ${g.values.map(v => `
+          <label class="filter-check">
+            <input type="checkbox" value="${v}" data-facet="${g.key}" ${filters[g.key].has(v) ? 'checked' : ''}>
+            <span>${v}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function applyFilters(){
+  document.querySelectorAll('#filters-body input[type=checkbox]').forEach(cb => {
+    const facet = cb.dataset.facet;
+    if(cb.checked){ filters[facet].add(cb.value); } else { filters[facet].delete(cb.value); }
+  });
+  updateFilterCount();
+  closeAll();
+  renderCatalog();
+}
+
+function clearFilters(){
+  filters = {brand:new Set(), size:new Set(), color:new Set()};
+  renderFiltersBody();
+  updateFilterCount();
+  renderCatalog();
+}
+
+function updateFilterCount(){
+  const n = filters.brand.size + filters.size.size + filters.color.size;
+  const el = document.getElementById('filter-count');
+  if(n > 0){ el.style.display = 'inline-flex'; el.textContent = n; } else { el.style.display = 'none'; }
+}
 
 const WHATSAPP_NUMBER = "5511948448398";
 const COUPONS = {
@@ -696,7 +863,7 @@ function cardHTML(p){
     </button>
     <div class="img-wrap">${p.icon}</div>
     <div class="info">
-      <div class="cat">${p.cat === 'tenis' ? 'Tênis' : 'Boné'}</div>
+      <div class="cat">${p.cat === 'tenis' ? 'Tênis' : 'Boné'} · ${p.brand}</div>
       <h3>${p.name}</h3>
       <div class="price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
       <button class="add-btn" onclick="addToCart('${p.id}')">
@@ -719,7 +886,13 @@ function renderHome(){
 
 function renderCatalog(){
   const q = (document.getElementById('search-input').value || '').toLowerCase();
-  renderGrid('product-grid', PRODUCTS.filter(p => (currentCat === 'todos' || p.cat === currentCat) && p.name.toLowerCase().includes(q)));
+  renderGrid('product-grid', PRODUCTS.filter(p =>
+    (currentCat === 'todos' || p.cat === currentCat) &&
+    p.name.toLowerCase().includes(q) &&
+    (filters.brand.size === 0 || filters.brand.has(p.brand)) &&
+    (filters.size.size === 0 || p.sizes.some(s => filters.size.has(s))) &&
+    (filters.color.size === 0 || p.colors.some(c => filters.color.has(c)))
+  ));
 }
 
 function filterCat(cat){
@@ -1030,6 +1203,26 @@ document.querySelectorAll('.overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => { if(e.target === overlay) closeAll(); });
 });
 
+document.getElementById('btn-search').addEventListener('click', () => {
+  if(document.getElementById('view-catalog').classList.contains('active')){
+    document.getElementById('search-input').focus();
+  } else {
+    document.getElementById('hero-search-input').scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('hero-search-input').focus();
+  }
+});
+
+document.getElementById('btn-menu').addEventListener('click', () => {
+  closeAll();
+  document.getElementById('overlay-menu').classList.add('open');
+});
+
+document.getElementById('btn-filters').addEventListener('click', () => {
+  renderFiltersBody();
+  closeAll();
+  document.getElementById('overlay-filters').classList.add('open');
+});
+
 /* ============ TOAST ============ */
 let toastTimer;
 function showToast(msg){
@@ -1040,11 +1233,27 @@ function showToast(msg){
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+/* ============ SCROLL REVEAL ============ */
+if('IntersectionObserver' in window){
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, {threshold:0.12});
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+} else {
+  document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+}
+
 /* ============ INIT ============ */
 renderHome();
 renderCatalog();
 updateCounts();
 refreshAccountUI();
+updateFilterCount();
 </script>
 </body>
 </html>
