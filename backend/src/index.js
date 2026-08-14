@@ -370,6 +370,24 @@ route('PUT', '/api/admin/orders/:id', async (request, env, params) => {
   return json({ ok: true });
 });
 
+route('PUT', '/api/admin/orders/:id/items', async (request, env, params) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  const b = await request.json().catch(() => ({}));
+  if (!Array.isArray(b.items)) return badRequest('Itens inválidos');
+  const order = await env.DB.prepare('SELECT subtotal, discount FROM orders WHERE id = ?').bind(params.id).first();
+  if (!order) return notFound();
+  const rate = order.subtotal > 0 ? order.discount / order.subtotal : 0;
+  const subtotal = b.items
+    .filter(i => !i.unavailable)
+    .reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
+  const discount = subtotal * rate;
+  const total = subtotal - discount;
+  await env.DB.prepare(
+    'UPDATE orders SET items = ?, subtotal = ?, discount = ?, total = ? WHERE id = ?'
+  ).bind(JSON.stringify(b.items), subtotal, discount, total, params.id).run();
+  return json({ ok: true });
+});
+
 /* ===================== NEWSLETTER ===================== */
 
 route('POST', '/api/newsletter', async (request, env) => {
