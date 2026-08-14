@@ -237,6 +237,9 @@
   .newsletter-copy h3{font-size:1.4rem;font-weight:600;font-style:italic;color:var(--ink);margin-bottom:6px;}
   .newsletter-copy p{font-size:.85rem;color:var(--ink-2);max-width:42ch;}
   .newsletter-form{display:flex;gap:10px;flex-wrap:wrap;flex:1;min-width:280px;max-width:520px;}
+  .newsletter-consent{display:flex;align-items:flex-start;gap:8px;width:100%;font-size:.7rem;color:var(--muted-2);line-height:1.4;}
+  .newsletter-consent input{width:auto;margin-top:2px;flex-shrink:0;}
+  .newsletter-consent a{color:var(--gold-4);text-decoration:underline;}
   .newsletter-form input{
     flex:1;min-width:140px;padding:13px 16px;border:none;border-radius:30px;
     font-size:.84rem;font-family:inherit;outline:none;background:var(--paper);color:var(--ink);
@@ -729,6 +732,10 @@
         <input type="text" id="news-nome" placeholder="Seu nome" required>
         <input type="email" id="news-email" placeholder="Seu e-mail" required>
         <button type="submit">Cadastrar</button>
+        <label class="newsletter-consent">
+          <input type="checkbox" id="news-consent" required>
+          Aceito receber e-mails da Ruan Pedro Imports e concordo com a <a href="#" onclick="openInfo('privacidade'); return false;">política de privacidade</a>.
+        </label>
       </form>
     </div>
   </section>
@@ -1919,10 +1926,11 @@ async function subscribeNewsletter(e){
   const form = e.target;
   const name = document.getElementById('news-nome').value.trim();
   const email = document.getElementById('news-email').value.trim();
+  const consent = document.getElementById('news-consent').checked;
   try {
     await fetch('/api/newsletter', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({ name, email, consent }),
     });
     showToast('Cadastro realizado! Você vai receber nossas novidades.');
     form.reset();

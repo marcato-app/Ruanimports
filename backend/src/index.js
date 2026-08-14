@@ -120,14 +120,34 @@ route('POST', '/api/coupons/validate', async (request, env) => {
 
 /* ===================== ADMIN AUTH ===================== */
 
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCK_MINUTES = 15;
+
 route('POST', '/api/admin/login', async (request, env) => {
   const body = await request.json().catch(() => ({}));
   const { username, password } = body;
   if (!username || !password) return badRequest('Informe usuário e senha');
+
+  const attempt = await env.DB.prepare('SELECT * FROM login_attempts WHERE username = ?').bind(username).first();
+  if (attempt && attempt.locked_until && new Date(attempt.locked_until) > new Date()) {
+    return json({ error: 'Muitas tentativas de login. Tente novamente em alguns minutos.' }, { status: 429 });
+  }
+
   const admin = await env.DB.prepare('SELECT * FROM admin_users WHERE username = ?').bind(username).first();
-  if (!admin) return json({ error: 'Usuário ou senha inválidos' }, { status: 401 });
-  const ok = await verifyPassword(password, admin.password_hash);
-  if (!ok) return json({ error: 'Usuário ou senha inválidos' }, { status: 401 });
+  const ok = admin && (await verifyPassword(password, admin.password_hash));
+  if (!ok) {
+    const failCount = (attempt ? attempt.fail_count : 0) + 1;
+    const lockedUntil = failCount >= LOGIN_MAX_ATTEMPTS
+      ? new Date(Date.now() + LOGIN_LOCK_MINUTES * 60 * 1000).toISOString()
+      : null;
+    await env.DB.prepare(
+      `INSERT INTO login_attempts (username, fail_count, locked_until) VALUES (?, ?, ?)
+       ON CONFLICT(username) DO UPDATE SET fail_count = excluded.fail_count, locked_until = excluded.locked_until`
+    ).bind(username, failCount, lockedUntil).run();
+    return json({ error: 'Usuário ou senha inválidos' }, { status: 401 });
+  }
+
+  await env.DB.prepare('DELETE FROM login_attempts WHERE username = ?').bind(username).run();
   const { token, expiresAt } = await createSession(env.DB, admin.id);
   return json({ ok: true, username: admin.username }, {
     headers: { 'Set-Cookie': sessionCookie(token, expiresAt) },
@@ -394,9 +414,10 @@ route('POST', '/api/newsletter', async (request, env) => {
   const b = await request.json().catch(() => ({}));
   const email = (b.email || '').trim().toLowerCase();
   if (!email) return badRequest('Informe um e-mail');
+  if (!b.consent) return badRequest('É preciso aceitar receber e-mails para se inscrever.');
   const id = genId('nws');
   try {
-    await env.DB.prepare('INSERT INTO newsletter_subscribers (id, name, email) VALUES (?, ?, ?)')
+    await env.DB.prepare('INSERT INTO newsletter_subscribers (id, name, email, consent) VALUES (?, ?, ?, 1)')
       .bind(id, b.name || '', email).run();
   } catch (err) {
     // já cadastrado — trata como sucesso idempotente
@@ -408,6 +429,22 @@ route('GET', '/api/admin/newsletter', async (request, env) => {
   if (!(await requireAdmin(request, env))) return unauthorized();
   const { results } = await env.DB.prepare('SELECT * FROM newsletter_subscribers ORDER BY created_at DESC').all();
   return json(results);
+});
+
+route('DELETE', '/api/admin/newsletter/:id', async (request, env, params) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  await env.DB.prepare('DELETE FROM newsletter_subscribers WHERE id = ?').bind(params.id).run();
+  return json({ ok: true });
+});
+
+route('POST', '/api/admin/orders/:id/anonymize', async (request, env, params) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  const order = await env.DB.prepare('SELECT id FROM orders WHERE id = ?').bind(params.id).first();
+  if (!order) return notFound();
+  await env.DB.prepare(
+    `UPDATE orders SET customer_name = ?, customer_phone = '', customer_email = '' WHERE id = ?`
+  ).bind('[dados removidos a pedido do cliente]', params.id).run();
+  return json({ ok: true });
 });
 
 /* ===================== ENTRY ===================== */

@@ -292,7 +292,7 @@
         <h2>Inscritos na newsletter</h2>
       </div>
       <table>
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Cadastrado em</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Cadastrado em</th><th></th></tr></thead>
         <tbody id="newsletter-tbody"></tbody>
       </table>
     </section>
@@ -361,6 +361,11 @@ let categories = [], products = [], coupons = [], banners = [], orders = [], sub
 let editingType = null, editingId = null;
 let productFilters = { search: '', category: '', color: '', size: '', status: '' };
 let orderFilters = { search: '', from: '', to: '', status: '' };
+
+const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ESC_MAP[c]);
+}
 
 async function api(path, options = {}) {
   const res = await fetch(API + path, {
@@ -455,19 +460,19 @@ function populateProductFilterOptions() {
   const catSel = document.getElementById('pf-category');
   const keepCat = catSel.value;
   catSel.innerHTML = '<option value="">Todas categorias</option>' +
-    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    categories.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   catSel.value = keepCat;
 
   const colors = [...new Set(products.flatMap(p => p.colors || []))].sort();
   const colorSel = document.getElementById('pf-color');
   const keepColor = colorSel.value;
-  colorSel.innerHTML = '<option value="">Todas cores</option>' + colors.map(c => `<option value="${c}">${c}</option>`).join('');
+  colorSel.innerHTML = '<option value="">Todas cores</option>' + colors.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   colorSel.value = keepColor;
 
   const sizes = [...new Set(products.flatMap(p => p.sizes || []))].sort();
   const sizeSel = document.getElementById('pf-size');
   const keepSize = sizeSel.value;
-  sizeSel.innerHTML = '<option value="">Todos tamanhos</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+  sizeSel.innerHTML = '<option value="">Todos tamanhos</option>' + sizes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
   sizeSel.value = keepSize;
 }
 
@@ -602,21 +607,39 @@ function renderOrders() {
   const filtered = getFilteredOrders();
   if (!filtered.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum pedido encontrado.</td></tr>'; return; }
   tbody.innerHTML = filtered.map(o => {
-    const itemsSummary = o.items.map(i => `${i.unavailable ? '<s style="color:var(--muted);">' : ''}${i.qty}x ${i.name}${i.unavailable ? '</s>' : ''}`).join(', ');
-    const editLink = o.items.length > 1 ? ` <button type="button" class="link-btn" onclick="openOrderItemsForm('${o.id}')">Editar itens</button>` : '';
+    const itemsSummary = o.items.map(i => `${i.unavailable ? '<s style="color:var(--muted);">' : ''}${esc(i.qty)}x ${esc(i.name)}${i.unavailable ? '</s>' : ''}`).join(', ');
+    const editLink = o.items.length > 1 ? ` <button type="button" class="link-btn" onclick="openOrderItemsForm('${esc(o.id)}')">Editar itens</button>` : '';
     const date = new Date(o.createdAt).toLocaleString('pt-BR');
     const options = Object.keys(ORDER_STATUS_LABELS).map(s =>
       `<option value="${s}" ${o.status === s ? 'selected' : ''}>${ORDER_STATUS_LABELS[s]}</option>`
     ).join('');
+    const isAnonymized = o.customerName === '[dados removidos a pedido do cliente]';
+    const clientCell = isAnonymized
+      ? `<em style="color:var(--muted);">Dados removidos</em>`
+      : `${esc(o.customerName) || 'Visitante'}${o.customerPhone ? `<br><span style="color:var(--muted);font-size:.72rem;">${esc(o.customerPhone)}</span>` : ''}`;
+    const anonymizeLink = (!isAnonymized && (o.customerName || o.customerPhone || o.customerEmail))
+      ? ` <button type="button" class="link-btn" onclick="anonymizeOrder('${esc(o.id)}')">Remover dados</button>` : '';
     return `
     <tr>
       <td data-label="Data">${date}</td>
-      <td data-label="Cliente">${o.customerName || 'Visitante'}${o.customerPhone ? `<br><span style="color:var(--muted);font-size:.72rem;">${o.customerPhone}</span>` : ''}</td>
+      <td data-label="Cliente">${clientCell}${anonymizeLink}</td>
       <td data-label="Itens" style="max-width:260px;">${itemsSummary}${editLink}</td>
       <td data-label="Total"><strong>R$ ${Number(o.total).toFixed(2).replace('.', ',')}</strong></td>
-      <td data-label="Status"><select onchange="updateOrderStatus('${o.id}', this.value)">${options}</select></td>
+      <td data-label="Status"><select onchange="updateOrderStatus('${esc(o.id)}', this.value)">${options}</select></td>
     </tr>`;
   }).join('');
+}
+
+async function anonymizeOrder(id) {
+  if (!confirm('Remover nome, telefone e e-mail deste pedido? O registro da venda (itens e valores) é mantido, apenas os dados pessoais do cliente são apagados. Essa ação não pode ser desfeita.')) return;
+  try {
+    await api(`/api/admin/orders/${id}/anonymize`, { method: 'POST' });
+    showToast('Dados do cliente removidos');
+    orders = await api('/api/admin/orders');
+    renderOrders();
+  } catch (e) {
+    alert(e.message);
+  }
 }
 
 /* ===== ORDER ITEMS EDITOR ===== */
@@ -628,11 +651,11 @@ function orderItemsFormHTML() {
     return '<p style="color:var(--muted);font-size:.85rem;">Todos os itens foram removidos deste pedido.</p>';
   }
   const rows = editingOrderItems.map((item, idx) => {
-    const variant = [item.size, item.color].filter(Boolean).join(' · ');
+    const variant = esc([item.size, item.color].filter(Boolean).join(' · '));
     return `
     <div class="order-item-row ${item.unavailable ? 'is-unavailable' : ''}">
       <div class="oi-info">
-        <strong>${item.qty}x ${item.name}</strong>
+        <strong>${esc(item.qty)}x ${esc(item.name)}</strong>
         ${variant ? `<span class="oi-variant">${variant}</span>` : ''}
         <span class="oi-price">R$ ${(item.price * item.qty).toFixed(2).replace('.', ',')}</span>
         ${item.unavailable ? '<span class="oi-flag">Sem estoque</span>' : ''}
@@ -685,12 +708,13 @@ async function updateOrderStatus(id, status) {
 
 function renderNewsletter() {
   const tbody = document.getElementById('newsletter-tbody');
-  if (!subscribers.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Nenhum inscrito ainda.</td></tr>'; return; }
+  if (!subscribers.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum inscrito ainda.</td></tr>'; return; }
   tbody.innerHTML = subscribers.map(s => `
     <tr>
-      <td data-label="Nome">${s.name || '—'}</td>
-      <td data-label="E-mail">${s.email}</td>
+      <td data-label="Nome">${esc(s.name) || '—'}</td>
+      <td data-label="E-mail">${esc(s.email)}</td>
       <td data-label="Cadastrado em">${new Date(s.created_at).toLocaleDateString('pt-BR')}</td>
+      <td><button class="danger" onclick="deleteItem('newsletter','${esc(s.id)}','${esc(s.email).replace(/'/g, "\\'")}')">Excluir</button></td>
     </tr>
   `).join('');
 }
@@ -707,14 +731,14 @@ function renderProducts() {
   if (!filtered.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${products.length ? 'Nenhum produto encontrado com esses filtros.' : 'Nenhum produto cadastrado.'}</td></tr>`; return; }
   tbody.innerHTML = filtered.map(p => `
     <tr>
-      <td data-label="Produto"><strong>${p.name}</strong></td>
-      <td data-label="Categoria">${categoryName(p.categoryId)}</td>
-      <td data-label="Marca">${p.brand || '—'}</td>
+      <td data-label="Produto"><strong>${esc(p.name)}</strong></td>
+      <td data-label="Categoria">${esc(categoryName(p.categoryId))}</td>
+      <td data-label="Marca">${esc(p.brand) || '—'}</td>
       <td data-label="Preço">R$ ${Number(p.price).toFixed(2).replace('.', ',')}</td>
       <td data-label="Status"><span class="pill ${p.active ? 'on' : 'off'}">${p.active ? 'Ativo' : 'Inativo'}</span></td>
       <td><div class="row-actions">
-        <button onclick="openProductForm('${p.id}')">Editar</button>
-        <button class="danger" onclick="deleteItem('products','${p.id}','${p.name.replace(/'/g,"\\'")}')">Excluir</button>
+        <button onclick="openProductForm('${esc(p.id)}')">Editar</button>
+        <button class="danger" onclick="deleteItem('products','${esc(p.id)}','${esc(p.name).replace(/'/g,"\\'")}')">Excluir</button>
       </div></td>
     </tr>
   `).join('');
@@ -725,12 +749,12 @@ function renderCategories() {
   if (!categories.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma categoria cadastrada.</td></tr>'; return; }
   tbody.innerHTML = categories.map(c => `
     <tr>
-      <td data-label="Nome"><strong>${c.name}</strong></td>
-      <td data-label="Slug">${c.slug}</td>
-      <td data-label="Ordem">${c.sort_order}</td>
+      <td data-label="Nome"><strong>${esc(c.name)}</strong></td>
+      <td data-label="Slug">${esc(c.slug)}</td>
+      <td data-label="Ordem">${esc(c.sort_order)}</td>
       <td><div class="row-actions">
-        <button onclick="openCategoryForm('${c.id}')">Editar</button>
-        <button class="danger" onclick="deleteItem('categories','${c.id}','${c.name.replace(/'/g,"\\'")}')">Excluir</button>
+        <button onclick="openCategoryForm('${esc(c.id)}')">Editar</button>
+        <button class="danger" onclick="deleteItem('categories','${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">Excluir</button>
       </div></td>
     </tr>
   `).join('');
@@ -741,13 +765,13 @@ function renderCoupons() {
   if (!coupons.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum cupom cadastrado.</td></tr>'; return; }
   tbody.innerHTML = coupons.map(c => `
     <tr>
-      <td data-label="Código"><strong>${c.code}</strong></td>
-      <td data-label="Descrição">${c.label}</td>
+      <td data-label="Código"><strong>${esc(c.code)}</strong></td>
+      <td data-label="Descrição">${esc(c.label)}</td>
       <td data-label="Desconto">${(c.rate * 100).toFixed(0)}%</td>
       <td data-label="Status"><span class="pill ${c.active ? 'on' : 'off'}">${c.active ? 'Ativo' : 'Inativo'}</span></td>
       <td><div class="row-actions">
-        <button onclick="openCouponForm('${c.id}')">Editar</button>
-        <button class="danger" onclick="deleteItem('coupons','${c.id}','${c.code}')">Excluir</button>
+        <button onclick="openCouponForm('${esc(c.id)}')">Editar</button>
+        <button class="danger" onclick="deleteItem('coupons','${esc(c.id)}','${esc(c.code)}')">Excluir</button>
       </div></td>
     </tr>
   `).join('');
@@ -758,13 +782,13 @@ function renderBanners() {
   if (!banners.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Nenhum banner cadastrado.</td></tr>'; return; }
   tbody.innerHTML = [...banners].sort((a, b) => a.position - b.position).map(b => `
     <tr>
-      <td data-label="Ordem">${b.position}</td>
-      <td data-label="Título"><strong>${b.title}</strong></td>
+      <td data-label="Ordem">${esc(b.position)}</td>
+      <td data-label="Título"><strong>${esc(b.title)}</strong></td>
       <td data-label="Tema">${b.theme === 'gold' ? 'Dourado' : 'Preto'}</td>
       <td data-label="Status"><span class="pill ${b.active ? 'on' : 'off'}">${b.active ? 'Ativo' : 'Inativo'}</span></td>
       <td><div class="row-actions">
-        <button onclick="openBannerForm('${b.id}')">Editar</button>
-        <button class="danger" onclick="deleteItem('banners','${b.id}','${b.title.replace(/'/g,"\\'")}')">Excluir</button>
+        <button onclick="openBannerForm('${esc(b.id)}')">Editar</button>
+        <button class="danger" onclick="deleteItem('banners','${esc(b.id)}','${esc(b.title).replace(/'/g,"\\'")}')">Excluir</button>
       </div></td>
     </tr>
   `).join('');
@@ -813,25 +837,25 @@ document.getElementById('overlay-form').addEventListener('click', (e) => {
 /* ===== PRODUCT FORM ===== */
 function openProductForm(id) {
   const p = id ? products.find(x => x.id === id) : null;
-  const catOptions = categories.map(c => `<option value="${c.id}" ${p && p.categoryId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+  const catOptions = categories.map(c => `<option value="${esc(c.id)}" ${p && p.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
   const body = `
-    <div class="field"><label>Nome do produto</label><input id="f-name" value="${p ? p.name.replace(/"/g, '&quot;') : ''}"></div>
+    <div class="field"><label>Nome do produto</label><input id="f-name" value="${p ? esc(p.name) : ''}"></div>
     <div class="field-row">
       <div class="field"><label>Categoria</label><select id="f-category">${catOptions}</select></div>
-      <div class="field"><label>Marca</label><input id="f-brand" value="${p ? (p.brand || '') : ''}"></div>
+      <div class="field"><label>Marca</label><input id="f-brand" value="${p ? esc(p.brand) : ''}"></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Preço (R$)</label><input id="f-price" type="number" step="0.01" value="${p ? p.price : ''}"></div>
-      <div class="field"><label>Selo (opcional)</label><input id="f-tag" placeholder="Novo, Mais vendido..." value="${p ? (p.tag || '') : ''}"></div>
+      <div class="field"><label>Selo (opcional)</label><input id="f-tag" placeholder="Novo, Mais vendido..." value="${p ? esc(p.tag) : ''}"></div>
     </div>
-    <div class="field"><label>Descrição</label><textarea id="f-description" placeholder="Detalhes do produto para a página individual">${p ? (p.description || '') : ''}</textarea></div>
+    <div class="field"><label>Descrição</label><textarea id="f-description" placeholder="Detalhes do produto para a página individual">${p ? esc(p.description) : ''}</textarea></div>
     <div class="field"><label>Estoque (deixe em branco para não controlar)</label><input id="f-stock" type="number" min="0" placeholder="Ex: 12" value="${p && p.stock !== null && p.stock !== undefined ? p.stock : ''}"></div>
     <div class="field-row">
       <div class="field"><label>Avaliação (0-5)</label><input id="f-rating" type="number" step="0.1" min="0" max="5" value="${p ? p.rating : 4.5}"></div>
       <div class="field"><label>Nº de avaliações</label><input id="f-reviews" type="number" value="${p ? p.reviews : 0}"></div>
     </div>
-    <div class="field"><label>Tamanhos (separados por vírgula)</label><input id="f-sizes" value="${p ? p.sizes.join(', ') : ''}"></div>
-    <div class="field"><label>Cores (separadas por vírgula)</label><input id="f-colors" value="${p ? p.colors.join(', ') : ''}"></div>
+    <div class="field"><label>Tamanhos (separados por vírgula)</label><input id="f-sizes" value="${p ? esc(p.sizes.join(', ')) : ''}"></div>
+    <div class="field"><label>Cores (separadas por vírgula)</label><input id="f-colors" value="${p ? esc(p.colors.join(', ')) : ''}"></div>
     <div class="field"><label>Ícone da vitrine</label>
       <select id="f-icon">
         <option value="tenis" ${p && p.icon === 'tenis' ? 'selected' : ''}>Tênis</option>
@@ -868,8 +892,8 @@ function openProductForm(id) {
 function openCategoryForm(id) {
   const c = id ? categories.find(x => x.id === id) : null;
   const body = `
-    <div class="field"><label>Nome</label><input id="f-name" value="${c ? c.name.replace(/"/g, '&quot;') : ''}" placeholder="Ex: Camisas"></div>
-    <div class="field"><label>Slug (identificador, sem espaços)</label><input id="f-slug" value="${c ? c.slug : ''}" placeholder="Ex: camisas"></div>
+    <div class="field"><label>Nome</label><input id="f-name" value="${c ? esc(c.name) : ''}" placeholder="Ex: Camisas"></div>
+    <div class="field"><label>Slug (identificador, sem espaços)</label><input id="f-slug" value="${c ? esc(c.slug) : ''}" placeholder="Ex: camisas"></div>
     <div class="field"><label>Ordem de exibição</label><input id="f-order" type="number" value="${c ? c.sort_order : 0}"></div>
   `;
   openForm(c ? 'Editar categoria' : 'Nova categoria', body, async () => {
@@ -888,8 +912,8 @@ function openCategoryForm(id) {
 function openCouponForm(id) {
   const c = id ? coupons.find(x => x.id === id) : null;
   const body = `
-    <div class="field"><label>Código do cupom</label><input id="f-code" value="${c ? c.code : ''}" placeholder="Ex: BEMVINDO10" style="text-transform:uppercase;"></div>
-    <div class="field"><label>Descrição (aparece pro cliente)</label><input id="f-label" value="${c ? c.label.replace(/"/g, '&quot;') : ''}" placeholder="Ex: BEMVINDO10 — 10% OFF"></div>
+    <div class="field"><label>Código do cupom</label><input id="f-code" value="${c ? esc(c.code) : ''}" placeholder="Ex: BEMVINDO10" style="text-transform:uppercase;"></div>
+    <div class="field"><label>Descrição (aparece pro cliente)</label><input id="f-label" value="${c ? esc(c.label) : ''}" placeholder="Ex: BEMVINDO10 — 10% OFF"></div>
     <div class="field"><label>Desconto (%)</label><input id="f-rate" type="number" step="1" min="0" max="100" value="${c ? Math.round(c.rate * 100) : 0}"></div>
     <div class="checkbox-row"><input type="checkbox" id="f-active" ${!c || c.active ? 'checked' : ''}><label for="f-active" style="margin:0;">Cupom ativo</label></div>
   `;
@@ -919,10 +943,10 @@ function openBannerForm(id) {
         </select>
       </div>
     </div>
-    <div class="field"><label>Texto pequeno (acima do título)</label><input id="f-eyebrow" value="${b ? (b.eyebrow || '').replace(/"/g, '&quot;') : ''}"></div>
-    <div class="field"><label>Título</label><input id="f-title" value="${b ? b.title.replace(/"/g, '&quot;') : ''}"></div>
-    <div class="field"><label>Descrição</label><textarea id="f-description">${b ? b.description || '' : ''}</textarea></div>
-    <div class="field"><label>Texto do botão</label><input id="f-cta-label" value="${b ? (b.cta_label || '').replace(/"/g, '&quot;') : ''}"></div>
+    <div class="field"><label>Texto pequeno (acima do título)</label><input id="f-eyebrow" value="${b ? esc(b.eyebrow) : ''}"></div>
+    <div class="field"><label>Título</label><input id="f-title" value="${b ? esc(b.title) : ''}"></div>
+    <div class="field"><label>Descrição</label><textarea id="f-description">${b ? esc(b.description) : ''}</textarea></div>
+    <div class="field"><label>Texto do botão</label><input id="f-cta-label" value="${b ? esc(b.cta_label) : ''}"></div>
     <div class="field"><label>Ação do botão</label>
       <select id="f-cta-action">
         <option value="catalog:todos" ${b && b.cta_action === 'catalog:todos' ? 'selected' : ''}>Abrir catálogo completo</option>
