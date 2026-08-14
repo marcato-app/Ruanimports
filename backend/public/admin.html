@@ -835,11 +835,52 @@ document.getElementById('overlay-form').addEventListener('click', (e) => {
 });
 
 /* ===== PRODUCT FORM ===== */
+let pendingPhotoFile = null;
+
+function onPhotoSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  pendingPhotoFile = file;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('photo-preview-wrap').innerHTML =
+      `<img src="${reader.result}" style="width:100%;max-width:220px;border-radius:8px;margin-bottom:10px;display:block;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  pendingPhotoFile = null;
+  document.getElementById('f-image-key').value = '';
+  document.getElementById('f-photo').value = '';
+  document.getElementById('photo-preview-wrap').innerHTML = '';
+}
+
+async function uploadPendingPhoto() {
+  const res = await fetch('/api/admin/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': pendingPhotoFile.type },
+    credentials: 'same-origin',
+    body: pendingPhotoFile,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Falha ao enviar a foto');
+  return data.key;
+}
+
 function openProductForm(id) {
   const p = id ? products.find(x => x.id === id) : null;
+  pendingPhotoFile = null;
   const catOptions = categories.map(c => `<option value="${esc(c.id)}" ${p && p.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
   const body = `
     <div class="field"><label>Nome do produto</label><input id="f-name" value="${p ? esc(p.name) : ''}"></div>
+    <div class="field">
+      <label>Foto do produto</label>
+      <div id="photo-preview-wrap">${p && p.imageKey ? `<img src="/api/images/${esc(p.imageKey)}" style="width:100%;max-width:220px;border-radius:8px;margin-bottom:10px;display:block;">` : ''}</div>
+      <input type="file" id="f-photo" accept="image/*" capture="environment" onchange="onPhotoSelected(this)">
+      <input type="hidden" id="f-image-key" value="${p && p.imageKey ? esc(p.imageKey) : ''}">
+      <button type="button" class="btn-clear" style="margin-top:8px;" onclick="removePhoto()">Remover foto</button>
+    </div>
     <div class="field-row">
       <div class="field"><label>Categoria</label><select id="f-category">${catOptions}</select></div>
       <div class="field"><label>Marca</label><input id="f-brand" value="${p ? esc(p.brand) : ''}"></div>
@@ -870,6 +911,10 @@ function openProductForm(id) {
     <div class="checkbox-row"><input type="checkbox" id="f-active" ${!p || p.active ? 'checked' : ''}><label for="f-active" style="margin:0;">Produto ativo (visível na loja)</label></div>
   `;
   openForm(p ? 'Editar produto' : 'Novo produto', body, async () => {
+    let imageKey = document.getElementById('f-image-key').value || null;
+    if (pendingPhotoFile) {
+      imageKey = await uploadPendingPhoto();
+    }
     const payload = {
       categoryId: document.getElementById('f-category').value,
       name: document.getElementById('f-name').value.trim(),
@@ -884,10 +929,12 @@ function openProductForm(id) {
       active: document.getElementById('f-active').checked,
       description: document.getElementById('f-description').value.trim(),
       stock: document.getElementById('f-stock').value === '' ? null : parseInt(document.getElementById('f-stock').value),
+      imageKey,
     };
     if (!payload.name || !payload.categoryId || isNaN(payload.price)) throw new Error('Preencha nome, categoria e preço.');
     if (p) await api(`/api/admin/products/${p.id}`, { method: 'PUT', body: JSON.stringify(payload) });
     else await api('/api/admin/products', { method: 'POST', body: JSON.stringify(payload) });
+    pendingPhotoFile = null;
   });
 }
 

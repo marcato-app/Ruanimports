@@ -44,6 +44,7 @@ function rowToProduct(row) {
     sortOrder: row.sort_order,
     description: row.description || '',
     stock: row.stock === null || row.stock === undefined ? null : row.stock,
+    imageKey: row.image_key || null,
   };
 }
 
@@ -80,6 +81,18 @@ function matchRoute(method, pathname) {
 }
 
 /* ===================== PUBLIC ROUTES ===================== */
+
+route('GET', '/api/images/:key', async (request, env, params) => {
+  const obj = await env.IMAGES.get(params.key);
+  if (!obj) return notFound();
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'ETag': obj.httpEtag,
+    },
+  });
+});
 
 route('GET', '/api/categories', async (request, env) => {
   const { results } = await env.DB.prepare('SELECT * FROM categories ORDER BY sort_order').all();
@@ -202,6 +215,22 @@ route('DELETE', '/api/admin/categories/:id', async (request, env, params) => {
 
 /* ===================== ADMIN: PRODUCTS ===================== */
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
+route('POST', '/api/admin/upload', async (request, env) => {
+  if (!(await requireAdmin(request, env))) return unauthorized();
+  const contentType = (request.headers.get('content-type') || '').split(';')[0].trim();
+  if (!ALLOWED_IMAGE_TYPES.includes(contentType)) return badRequest('Envie uma imagem JPG, PNG, WEBP ou GIF.');
+  const buf = await request.arrayBuffer();
+  if (buf.byteLength === 0) return badRequest('Arquivo vazio.');
+  if (buf.byteLength > MAX_IMAGE_BYTES) return badRequest('Imagem muito grande (máximo 8MB).');
+  const ext = contentType.split('/')[1];
+  const key = `${genId('img')}.${ext}`;
+  await env.IMAGES.put(key, buf, { httpMetadata: { contentType } });
+  return json({ key });
+});
+
 route('GET', '/api/admin/products', async (request, env) => {
   if (!(await requireAdmin(request, env))) return unauthorized();
   const { results } = await env.DB.prepare(
@@ -216,13 +245,13 @@ route('POST', '/api/admin/products', async (request, env) => {
   if (!b.name || !b.categoryId || b.price == null) return badRequest('Informe nome, categoria e preço');
   const id = genId('prd');
   await env.DB.prepare(
-    `INSERT INTO products (id, category_id, name, brand, price, tag, rating, reviews, sizes, colors, icon, active, sort_order, description, stock)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO products (id, category_id, name, brand, price, tag, rating, reviews, sizes, colors, icon, active, sort_order, description, stock, image_key)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, b.categoryId, b.name, b.brand || '', b.price, b.tag || '',
     b.rating ?? 4.5, b.reviews ?? 0, JSON.stringify(b.sizes || []), JSON.stringify(b.colors || []),
     b.icon || 'tenis', b.active === false ? 0 : 1, b.sortOrder || 0,
-    b.description || '', b.stock === '' || b.stock == null ? null : b.stock
+    b.description || '', b.stock === '' || b.stock == null ? null : b.stock, b.imageKey || null
   ).run();
   return json({ id });
 });
@@ -231,13 +260,13 @@ route('PUT', '/api/admin/products/:id', async (request, env, params) => {
   if (!(await requireAdmin(request, env))) return unauthorized();
   const b = await request.json().catch(() => ({}));
   await env.DB.prepare(
-    `UPDATE products SET category_id=?, name=?, brand=?, price=?, tag=?, rating=?, reviews=?, sizes=?, colors=?, icon=?, active=?, sort_order=?, description=?, stock=?, updated_at=datetime('now')
+    `UPDATE products SET category_id=?, name=?, brand=?, price=?, tag=?, rating=?, reviews=?, sizes=?, colors=?, icon=?, active=?, sort_order=?, description=?, stock=?, image_key=?, updated_at=datetime('now')
      WHERE id = ?`
   ).bind(
     b.categoryId, b.name, b.brand || '', b.price, b.tag || '',
     b.rating ?? 4.5, b.reviews ?? 0, JSON.stringify(b.sizes || []), JSON.stringify(b.colors || []),
     b.icon || 'tenis', b.active === false ? 0 : 1, b.sortOrder || 0,
-    b.description || '', b.stock === '' || b.stock == null ? null : b.stock, params.id
+    b.description || '', b.stock === '' || b.stock == null ? null : b.stock, b.imageKey || null, params.id
   ).run();
   return json({ ok: true });
 });

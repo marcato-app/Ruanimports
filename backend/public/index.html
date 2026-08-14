@@ -313,7 +313,7 @@
   .card .fav-btn svg{width:15px;height:15px;stroke:var(--ink);fill:none;transition:.15s;}
   .card .fav-btn.active{border-color:var(--gold-3);}
   .card .fav-btn.active svg{fill:var(--gold-3);stroke:var(--gold-4);}
-  .card .img-wrap{width:100%;aspect-ratio:1/1;background:var(--ink);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;}
+  .card .img-wrap{width:100%;aspect-ratio:1/1;background:var(--ink);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;overflow:hidden;}
   .card-title-link{cursor:pointer;}
   .card-title-link:hover{color:var(--gold-4);}
   .tag.tag-out{background:var(--muted);color:var(--paper);}
@@ -362,7 +362,7 @@
   /* ===== PRODUCT DETAIL ===== */
   .product-layout{display:grid;grid-template-columns:1fr;gap:36px;}
   @media(min-width:800px){.product-layout{grid-template-columns:1fr 1.15fr;align-items:start;}}
-  .product-stage{aspect-ratio:1/1;background:var(--ink);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;position:relative;}
+  .product-stage{aspect-ratio:1/1;background:var(--ink);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
   .product-stage svg{width:52%;height:52%;stroke:var(--gold-2);color:var(--gold-2);}
   .product-info h1{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:1.7rem;margin:6px 0 10px;line-height:1.2;}
   .product-description{color:var(--muted);font-size:.9rem;line-height:1.75;margin:16px 0 20px;max-width:56ch;}
@@ -421,7 +421,7 @@
   .size-table td{padding:8px 10px;font-size:.84rem;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
 
   .cart-item{display:flex;gap:14px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line);}
-  .cart-item .thumb{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .cart-item .thumb{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
   .cart-item .thumb svg{width:58%;height:58%;stroke:var(--gold-2);color:var(--gold-2);}
   .cart-item .ci-info{flex:1;}
   .cart-item h4{font-size:.82rem;font-weight:700;margin-bottom:3px;color:var(--ink);}
@@ -430,7 +430,7 @@
 
   /* ===== QUICK ADD ===== */
   .qa-product{display:flex;gap:14px;align-items:center;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--line);}
-  .qa-thumb{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .qa-thumb{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
   .qa-thumb svg{width:58%;height:58%;stroke:var(--gold-2);color:var(--gold-2);}
   .qa-info h4{font-size:.9rem;font-weight:700;color:var(--ink);margin:2px 0;}
   .qa-cat{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
@@ -1022,6 +1022,10 @@ function iconMarkup(key){
   if(key === 'acessorio') return ICON_ACESSORIO;
   return ICON_GENERIC;
 }
+function productMediaMarkup(p){
+  if(p.imageKey) return `<img src="/api/images/${p.imageKey}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
+  return iconMarkup(p.icon);
+}
 
 function categoryName(slug){
   const c = CATEGORIES.find(c => c.slug === slug);
@@ -1163,7 +1167,7 @@ function cardHTML(p){
     <button class="fav-btn ${isFav?'active':''}" onclick="toggleFav('${p.id}')">
       <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 21s-7.5-4.9-10-9.3C.4 8 2 4.5 5.6 4c2-.3 3.8.6 4.9 2.3C11.6 4.6 13.4 3.7 15.4 4 19 4.5 20.6 8 20 11.7 17.5 16.1 12 21 12 21z"/></svg>
     </button>
-    <button class="img-wrap" onclick="openProduct('${p.id}')" aria-label="Ver detalhes de ${p.name}">${iconMarkup(p.icon)}</button>
+    <button class="img-wrap" onclick="openProduct('${p.id}')" aria-label="Ver detalhes de ${p.name}">${productMediaMarkup(p)}</button>
     <div class="info">
       <div class="cat">${categoryName(p.cat)} · ${p.brand}</div>
       <h3 class="card-title-link" onclick="openProduct('${p.id}')">${p.name}</h3>
@@ -1217,7 +1221,7 @@ function renderProductView(){
     <div class="product-layout">
       <div class="product-stage">
         ${p.tag ? `<span class="tag ${outOfStock ? 'tag-out' : ''}">${outOfStock ? 'Esgotado' : p.tag}</span>` : (outOfStock ? `<span class="tag tag-out">Esgotado</span>` : '')}
-        ${iconMarkup(p.icon)}
+        ${productMediaMarkup(p)}
       </div>
       <div class="product-info">
         <div class="cat">${categoryName(p.cat)} · ${p.brand}</div>
@@ -1379,7 +1383,7 @@ function renderFavs(){
   }
   body.innerHTML = items.map(p => `
     <div class="cart-item">
-      <div class="thumb">${iconMarkup(p.icon)}</div>
+      <div class="thumb">${productMediaMarkup(p)}</div>
       <div class="ci-info">
         <h4>${p.name}</h4>
         <div class="ci-price tnum">R$ ${p.price.toFixed(2).replace('.',',')}</div>
@@ -1411,7 +1415,7 @@ function renderQuickAdd(){
   const body = document.getElementById('quickadd-body');
   body.innerHTML = `
     <div class="qa-product">
-      <div class="qa-thumb">${iconMarkup(p.icon)}</div>
+      <div class="qa-thumb">${productMediaMarkup(p)}</div>
       <div class="qa-info">
         <div class="qa-cat">${categoryName(p.cat)} · ${p.brand}</div>
         <h4>${p.name}</h4>
@@ -1505,7 +1509,7 @@ async function renderCart(){
     const variant = [ci.size, ci.color].filter(Boolean).join(' · ');
     return `
     <div class="cart-item">
-      <div class="thumb">${iconMarkup(p.icon)}</div>
+      <div class="thumb">${productMediaMarkup(p)}</div>
       <div class="ci-info">
         <h4>${p.name}</h4>
         ${variant ? `<div class="ci-variant">${variant}</div>` : ''}
