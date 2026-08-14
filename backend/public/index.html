@@ -1859,6 +1859,10 @@ async function loadStoreData(){
   if(hashMatch && PRODUCTS.some(p => p.id === hashMatch[1])){
     openProduct(hashMatch[1]);
   }
+  const catMatch = location.hash.match(/^#categoria\/(.+)$/);
+  if(catMatch && (catMatch[1] === 'todos' || CATEGORIES.some(c => c.slug === catMatch[1]))){
+    filterCat(catMatch[1]);
+  }
 }
 
 function initCarousel(){
