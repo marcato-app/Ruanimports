@@ -7,10 +7,6 @@ binding = "DB"
 database_name = "ruanimports-db"
 database_id = "1a0e5dd8-4924-47bf-a1eb-edc545b015b2"
 
-[[r2_buckets]]
-binding = "IMAGES"
-bucket_name = "ruanimports-images"
-
 [assets]
 directory = "./public"
 binding = "ASSETS"

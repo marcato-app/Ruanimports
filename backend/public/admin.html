@@ -856,12 +856,44 @@ function removePhoto() {
   document.getElementById('photo-preview-wrap').innerHTML = '';
 }
 
+// Phone cameras produce multi-megabyte photos. Shrink to a sane size in
+// the browser so pages stay fast and the stored blob stays small.
+const MAX_PHOTO_DIMENSION = 1000;
+
+function shrinkPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > MAX_PHOTO_DIMENSION || height > MAX_PHOTO_DIMENSION) {
+        const scale = MAX_PHOTO_DIMENSION / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Não foi possível processar a imagem'))),
+        'image/jpeg',
+        0.82
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Arquivo de imagem inválido')); };
+    img.src = url;
+  });
+}
+
 async function uploadPendingPhoto() {
+  const blob = await shrinkPhoto(pendingPhotoFile);
   const res = await fetch('/api/admin/upload', {
     method: 'POST',
-    headers: { 'Content-Type': pendingPhotoFile.type },
+    headers: { 'Content-Type': 'image/jpeg' },
     credentials: 'same-origin',
-    body: pendingPhotoFile,
+    body: blob,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Falha ao enviar a foto');

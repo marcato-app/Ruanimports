@@ -83,13 +83,16 @@ function matchRoute(method, pathname) {
 /* ===================== PUBLIC ROUTES ===================== */
 
 route('GET', '/api/images/:key', async (request, env, params) => {
-  const obj = await env.IMAGES.get(params.key);
-  if (!obj) return notFound();
-  return new Response(obj.body, {
+  const row = await env.DB.prepare('SELECT content_type, data FROM product_images WHERE key = ?')
+    .bind(params.key).first();
+  if (!row) return notFound();
+  // D1 hands BLOBs back as a plain array of byte values.
+  const bytes = row.data instanceof ArrayBuffer ? new Uint8Array(row.data) : new Uint8Array(row.data);
+  return new Response(bytes, {
     headers: {
-      'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+      'Content-Type': row.content_type || 'application/octet-stream',
+      // Keys are unique per upload, so a photo at a given key never changes.
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'ETag': obj.httpEtag,
     },
   });
 });
@@ -216,7 +219,9 @@ route('DELETE', '/api/admin/categories/:id', async (request, env, params) => {
 /* ===================== ADMIN: PRODUCTS ===================== */
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+// Images are stored as D1 blobs, and the admin shrinks them in the browser
+// before uploading, so anything above this is a sign something went wrong.
+const MAX_IMAGE_BYTES = 1500 * 1024;
 
 route('POST', '/api/admin/upload', async (request, env) => {
   if (!(await requireAdmin(request, env))) return unauthorized();
@@ -224,10 +229,11 @@ route('POST', '/api/admin/upload', async (request, env) => {
   if (!ALLOWED_IMAGE_TYPES.includes(contentType)) return badRequest('Envie uma imagem JPG, PNG, WEBP ou GIF.');
   const buf = await request.arrayBuffer();
   if (buf.byteLength === 0) return badRequest('Arquivo vazio.');
-  if (buf.byteLength > MAX_IMAGE_BYTES) return badRequest('Imagem muito grande (máximo 8MB).');
+  if (buf.byteLength > MAX_IMAGE_BYTES) return badRequest('Imagem muito grande. Tente uma foto menor.');
   const ext = contentType.split('/')[1];
   const key = `${genId('img')}.${ext}`;
-  await env.IMAGES.put(key, buf, { httpMetadata: { contentType } });
+  await env.DB.prepare('INSERT INTO product_images (key, content_type, data) VALUES (?, ?, ?)')
+    .bind(key, contentType, [...new Uint8Array(buf)]).run();
   return json({ key });
 });
 

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "wrangler dev",
-    "bootstrap": "node scripts/bootstrap-d1.mjs && node scripts/bootstrap-r2.mjs",
+    "bootstrap": "node scripts/bootstrap-d1.mjs",
     "migrate": "node scripts/migrate.mjs",
     "deploy": "wrangler deploy",
     "publish": "npm run bootstrap && npm run migrate && npm run deploy"
