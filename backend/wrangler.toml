@@ -5,7 +5,7 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "ruanimports-db"
-database_id = "1a0e5dd8-4924-47bf-a1eb-edc545b015b2"
+database_id = "dd32f6e8-f310-4c12-ae83-d85d1ba379c4"
 
 [assets]
 directory = "./public"
