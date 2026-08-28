@@ -909,7 +909,7 @@ function openProductForm(id) {
     <div class="field">
       <label>Foto do produto</label>
       <div id="photo-preview-wrap">${p && p.imageKey ? `<img src="/api/images/${esc(p.imageKey)}" style="width:100%;max-width:220px;border-radius:8px;margin-bottom:10px;display:block;">` : ''}</div>
-      <input type="file" id="f-photo" accept="image/*" capture="environment" onchange="onPhotoSelected(this)">
+      <input type="file" id="f-photo" accept="image/*" onchange="onPhotoSelected(this)">
       <input type="hidden" id="f-image-key" value="${p && p.imageKey ? esc(p.imageKey) : ''}">
       <button type="button" class="btn-clear" style="margin-top:8px;" onclick="removePhoto()">Remover foto</button>
     </div>
